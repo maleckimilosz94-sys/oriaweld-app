@@ -1,0 +1,84 @@
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ORIAWELD SI – AR</title><meta name="theme-color" content="#0b0d14">
+<style>@font-face{font-family:Michroma;src:url(vendor/fonts/Michroma-Regular.ttf)}
+body{margin:0;min-height:100vh;background:radial-gradient(120% 70% at 50% 20%,#16203a,#0b0d14 50%,#030407);color:#e6e9ef;font:15px/1.45 system-ui,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;text-align:center}
+h1{font:16px Michroma,sans-serif;letter-spacing:.12em;color:#22d3ee;margin:0 0 18px}
+.go{display:block;width:100%;max-width:340px;box-sizing:border-box;padding:20px;border-radius:16px;background:#22d3ee;color:#04121a;font:bold 19px system-ui;text-decoration:none;box-shadow:0 0 28px rgba(34,211,238,.45);margin:12px 0}
+.alt{display:block;width:100%;max-width:340px;box-sizing:border-box;padding:13px;border-radius:12px;border:1px solid rgba(139,92,246,.6);background:transparent;color:#e6e9ef;font:15px system-ui;margin:8px 0}
+.st{max-width:340px;padding:10px 12px;border-radius:12px;border:1px solid rgba(34,211,238,.35);background:rgba(34,211,238,.08);font-size:13px}.st.err{border-color:rgba(248,113,113,.6);background:rgba(248,113,113,.12)}
+small{opacity:.65}</style></head><body><h1>ORIAWELD SI · AR</h1><div id="act"></div><div class="st" id="st" role="status">…</div><button class="alt" id="du" hidden></button><small id="mm"></small>
+<script src="lib/three.min.js"></script><script src="vendor/fflate.min.js"></script><script src="vendor/USDZExporter.js"></script><script src="vendor/lz-string.min.js"></script><script src="vendor/ar-holo-ios.js"></script>
+<script>/* M11: strona dla Safari. Model przychodzi WYŁĄCZNIE w #hashu (nie trafia na serwer). */
+var LG=(navigator.language||'pl').slice(0,2);LG={pl:1,en:1,de:1}[LG]?LG:'en';try{LG=localStorage.getItem('oria_lang')||LG}catch(e){}
+var TX={pl:{go:'◎ Zobacz w AR',dl:'⬇ Pobierz plik AR (.usdz)',prep:'Przygotowuję model…',ready:'Gotowe – dotknij „Zobacz w AR”.',none:'Brak danych modelu w adresie. Wróć do aplikacji i dotknij AR jeszcze raz.',bad:'Nie udało się odczytać modelu: ',ql:'Ta przeglądarka nie obsługuje Quick Look – otwórz ten link w Safari na iPhonie albo pobierz plik .usdz.'},
+ en:{go:'◎ View in AR',dl:'⬇ Download AR file (.usdz)',prep:'Preparing model…',ready:'Ready – tap “View in AR”.',none:'No model data in the address. Go back to the app and tap AR again.',bad:'Could not read the model: ',ql:'This browser does not support Quick Look – open this link in Safari on iPhone or download the .usdz file.'},
+ de:{go:'◎ In AR ansehen',dl:'⬇ AR-Datei laden (.usdz)',prep:'Modell wird vorbereitet…',ready:'Fertig – tippe auf „In AR ansehen“.',none:'Keine Modelldaten in der Adresse. Zurück zur App und AR erneut antippen.',bad:'Modell konnte nicht gelesen werden: ',ql:'Dieser Browser unterstützt Quick Look nicht – öffne den Link in Safari auf dem iPhone oder lade die .usdz-Datei.'}}[LG]||null;
+var T=TX||{};function st(m,e){var s=document.getElementById('st');s.textContent=m;s.className='st'+(e?' err':'')}
+var D=null;try{var h=location.hash.slice(1);if(!h){st(T.none,true)}else{D=__arUnpack(h);try{localStorage.setItem('oria_arstyle',D.s=='stal'?'stal':'holo')}catch(e){}}}catch(e){st(T.bad+e.message,true)}
+function arGroup(){var w=new THREE.Group();w.name='rama';var mat=new THREE.MeshStandardMaterial({color:0x9ea4ab,metalness:0.8,roughness:0.4});mat.name='stal';
+ (D?D.g:[]).forEach(function(g,i){var m=new THREE.Mesh(g,mat);m.name='czesc_'+i;w.add(m)});w.updateMatrixWorld(true);return w}
+function exportUSDZ(w){return Promise.resolve(new THREE.USDZExporter().parse(w)).then(function(a){return new Blob([a],{type:'model/vnd.usdz+zip'})})}
+</script>
+<script id="m7js">(function(){
+if(typeof arGroup!='function'||typeof exportUSDZ!='function')return;
+var K='oria_arstyle';function style(){try{return localStorage.getItem(K)==='stal'?'stal':'holo'}catch(e){return 'holo'}}
+window.__arStyle=function(v){if(v==null)return style();try{localStorage.setItem(K,v)}catch(e){}};
+var C=0x22d3ee;
+function mats(ios){var M={};
+ M.part=ios?new THREE.MeshStandardMaterial({color:0x8be9f7,emissive:C,emissiveIntensity:0.25,metalness:0,roughness:0.45}):new THREE.MeshStandardMaterial({color:0x0891b2,emissive:C,emissiveIntensity:0.35,metalness:0,roughness:1,transparent:true,opacity:0.62,depthWrite:false,side:THREE.DoubleSide});
+ M.edge=ios?new THREE.MeshStandardMaterial({color:0x0e7490,emissive:0x0e7490,emissiveIntensity:0.3,metalness:0,roughness:0.5}):new THREE.MeshStandardMaterial({color:0x67e8f9,emissive:0xa5f3fc,emissiveIntensity:0.5,metalness:0,roughness:1});
+ M.dim=ios?new THREE.MeshStandardMaterial({color:0xf97316,emissive:0xf97316,emissiveIntensity:0.3,metalness:0,roughness:0.5}):new THREE.MeshStandardMaterial({color:0x22d3ee,emissive:0x67e8f9,emissiveIntensity:0.9,metalness:0,roughness:1});
+ M.part.name=ios?'holo_iOS_czesc':'holo_czesc';M.edge.name=ios?'holo_iOS_krawedz':'holo_krawedz';M.dim.name=ios?'holo_iOS_wymiar':'holo_wymiar';return M}
+// cienkie pręty (prostopadłościany) wzdłuż odcinków – scalone w jedną geometrię
+function bars(segs,t){var n=segs.length,P=new Float32Array(n*36*3),N=new Float32Array(n*36*3),o=0,a=new THREE.Vector3(),b=new THREE.Vector3(),d=new THREE.Vector3(),u=new THREE.Vector3(),v=new THREE.Vector3(),h=t/2;
+ var F=[[0,1,2,3],[7,6,5,4],[0,4,5,1],[1,5,6,2],[2,6,7,3],[3,7,4,0]];
+ segs.forEach(function(s){a.copy(s[0]);b.copy(s[1]);d.subVectors(b,a);var L=d.length();if(L<1e-6)return;d.divideScalar(L);a.addScaledVector(d,-h);b.addScaledVector(d,h);u.set(0,1,0);if(Math.abs(d.y)>0.9)u.set(1,0,0);v.crossVectors(d,u).normalize();u.crossVectors(v,d).normalize();
+  var c=[];[a,b].forEach(function(e){[[-1,-1],[1,-1],[1,1],[-1,1]].forEach(function(q){c.push(e.clone().addScaledVector(u,q[0]*h).addScaledVector(v,q[1]*h))})});
+  var V=[c[0],c[1],c[2],c[3],c[4],c[5],c[6],c[7]];
+  // ściany: 0-3 przy a, 4-7 przy b
+  var Q=[[0,3,2,1],[4,5,6,7],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]];
+  Q.forEach(function(q){[[0,1,2],[0,2,3]].forEach(function(tr){tr.forEach(function(k){var p=V[q[k]];P[o]=p.x;P[o+1]=p.y;P[o+2]=p.z;o+=3})})})});
+ var g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(P.subarray(0,o),3));g.computeVertexNormals();return g}
+function label(txt,ios,hgt){var cv=document.createElement('canvas');cv.width=512;cv.height=128;var g=cv.getContext('2d');g.clearRect(0,0,512,128);
+ g.fillStyle=ios?'#0b1220':'rgba(3,10,18,0.9)';g.strokeStyle=ios?'#f97316':'#22d3ee';g.lineWidth=6;var r=28;g.beginPath();g.moveTo(r,4);g.arcTo(508,4,508,124,r);g.arcTo(508,124,4,124,r);g.arcTo(4,124,4,4,r);g.arcTo(4,4,508,4,r);g.closePath();g.fill();g.stroke();
+ g.fillStyle='#ffffff';g.font='bold 76px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(txt,256,68);
+ var tx=new THREE.CanvasTexture(cv);tx.name='etykieta';var m=new THREE.MeshBasicMaterial({map:tx,side:THREE.DoubleSide,transparent:!ios,alphaTest:ios?0:0.02});m.name=(ios?'holo_iOS_etykieta_':'holo_etykieta_')+txt;
+ var me=new THREE.Mesh(new THREE.PlaneGeometry(hgt*4,hgt),m);me.userData.hrole='label';me.userData.txt=txt;return me}
+function build(w,ios){var parts=[];w.children.forEach(function(o){if(o.isMesh&&/^czesc_/.test(o.name))parts.push(o)});if(!parts.length)return;var M=mats(ios),bb=new THREE.Box3();
+ parts.forEach(function(o){bb.expandByObject(o)});var sz=bb.getSize(new THREE.Vector3()),mx=Math.max(sz.x,sz.y,sz.z),et=Math.min(0.004,Math.max(0.0012,mx*0.0025)),segs=[];
+ parts.forEach(function(o){o.material=M.part;o.userData.hrole='part';var e=new THREE.EdgesGeometry(o.geometry,25),p=e.attributes.position;for(var i=0;i<p.count;i+=2)segs.push([new THREE.Vector3().fromBufferAttribute(p,i),new THREE.Vector3().fromBufferAttribute(p,i+1)])});
+ if(segs.length>8000)segs=segs.filter(function(s){return s[0].distanceTo(s[1])>mx*0.01}).slice(0,8000);
+ var E=new THREE.Mesh(bars(segs,et),M.edge);E.name='krawedzie';E.userData.hrole='edge';w.add(E);
+ // wymiary gabarytowe (mm z bryły silnika)
+ var off=Math.max(0.03,mx*0.06),dt=Math.max(0.0015,et*1.2),tk=off*0.35,lh=Math.min(0.12,Math.max(0.03,mx*0.05)),D=[],G=new THREE.Group();G.name='wymiary';
+ var x0=bb.min.x,x1=bb.max.x,z0=bb.min.z,z1=bb.max.z,y0=bb.min.y,y1=bb.max.y,V=function(x,y,z){return new THREE.Vector3(x,y,z)};
+ var zf=z1+off,xr=x1+off;
+ D.push([V(x0,y0,zf),V(x1,y0,zf)],[V(x0,y0,z1),V(x0,y0,zf+tk*.4)],[V(x1,y0,z1),V(x1,y0,zf+tk*.4)]);
+ D.push([V(xr,y0,z0),V(xr,y0,z1)],[V(x1,y0,z0),V(xr+tk*.4,y0,z0)],[V(x1,y0,z1),V(xr+tk*.4,y0,z1)]);
+ D.push([V(xr,y0,zf),V(xr,y1,zf)],[V(x1,y1,z1),V(xr+tk*.3,y1,zf+tk*.3)]);
+ var dl=new THREE.Mesh(bars(D,dt),M.dim);dl.name='linie_wymiarowe';dl.userData.hrole='dim';G.add(dl);
+ var mm=function(v){return Math.round(v*1000)+' mm'};
+ var a=label(mm(sz.x),ios,lh);a.position.set((x0+x1)/2,y0+lh*0.75,zf);a.name='etykieta_X';G.add(a);
+ var b=label(mm(sz.z),ios,lh);b.position.set(xr,y0+lh*0.75,(z0+z1)/2);b.rotation.y=Math.PI/2;b.name='etykieta_Z';G.add(b);
+ var c=label(mm(sz.y),ios,lh);c.position.set(xr+lh*0.2,(y0+y1)/2,zf+lh*0.2);c.rotation.y=Math.PI/4;c.name='etykieta_Y';G.add(c);
+ w.add(G);w.userData.holo=ios?'ios':'glb';w.userData.mm=[Math.round(sz.x*1000),Math.round(sz.y*1000),Math.round(sz.z*1000)];w.updateMatrixWorld(true);}
+window.__holoBuild=build;
+var oG=arGroup;window.arGroup=arGroup=function(t){var w=oG.apply(this,arguments);if(style()=='holo')try{build(w,false)}catch(e){console.warn('holo',e)}return w};
+var oU=exportUSDZ;window.exportUSDZ=exportUSDZ=function(w){if(w&&w.userData&&w.userData.holo=='glb'){try{var w2=oG(!!w.getObjectByName('blat'));build(w2,true);w=w2}catch(e){console.warn('holo usdz',e)}}return oU.call(this,w)};
+// przełącznik HOLOGRAM / STAL w nakładce AR
+new MutationObserver(function(){var ov=document.getElementById('ar');if(!ov)return;var mv=ov.querySelector('#mv');if(mv&&!mv.__hl){mv.__hl=1;if(style()=='holo'){mv.setAttribute('tone-mapping','neutral');mv.setAttribute('exposure','1');mv.setAttribute('environment-image','neutral');mv.setAttribute('shadow-intensity','0')}}if(ov.querySelector('#arsty'))return;var bar=ov.querySelector('.arbar');if(!bar)return;var d=document.createElement('div');d.id='arsty';d.className='fsseg';d.setAttribute('role','group');d.setAttribute('aria-label','Wygląd w AR');
+ d.innerHTML='<button data-v="holo">✦ HOLOGRAM</button><button data-v="stal">STAL</button>';[].forEach.call(d.children,function(b){b.classList.toggle('on',b.dataset.v==style());b.onclick=function(){if(b.dataset.v==style())return;__arStyle(b.dataset.v);var t=document.getElementById('arT');openAR(!!(t&&t.checked))}});bar.insertAdjacentElement('afterend',d)}).observe(document.body,{childList:true});
+})();
+</script>
+<script>function __swCtl(){var sw=navigator.serviceWorker;if(!sw||!window.caches||!window.isSecureContext)return Promise.resolve(false);try{sw.register('sw.js').catch(function(){})}catch(e){}if(sw.controller)return Promise.resolve(true);return Promise.race([sw.ready.then(function(){return new Promise(function(r){if(sw.controller)return r(true);sw.addEventListener('controllerchange',function(){r(true)},{once:true})})}),new Promise(function(r){setTimeout(function(){r(!!sw.controller)},3000)})]).catch(function(){return false})}</script><script>
+if(D){st(T.prep);var w=arGroup();if(window.__holoBuild&&D.s!='stal')__holoBuild(w,true);
+ if(D.mm)document.getElementById('mm').textContent=D.mm.join(' × ')+' mm · 1:1';
+ exportUSDZ(w).then(function(b){window.__usdz=b;var U=new URL('vendor/ar/rama_model.usdz',location.href).href;
+  var p=__swCtl().then(function(ok){if(!ok)throw 0;return caches.open('arfiles')}).then(function(c){return c.put(U,new Response(b,{headers:{'Content-Type':'model/vnd.usdz+zip'}}))}).then(function(){return fetch(U,{cache:'no-store'})}).then(function(r){if(!r.ok||(r.headers.get('Content-Type')||'').indexOf('model/vnd.usdz+zip')!=0)throw 0;return U});
+  return p.catch(function(){return URL.createObjectURL(b)}).then(function(u){window.__how=/^blob:/.test(u)?'blob':'cache';return [b,u]})}).then(function(x){var b=x[0],u=x[1],qs=false;try{qs=document.createElement('a').relList.supports('ar')}catch(e){}
+  var a=document.createElement('a');a.rel='ar';a.className='go';a.id='go';a.href=u+'#allowsContentScaling=0';a.innerHTML='<img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="" width="1" height="1">'+T.go;document.getElementById('act').appendChild(a);
+  var d0=document.getElementById('du'),d=document.createElement('a');d.id='du';d.className=d0.className;d.textContent=T.dl;d.href=u;d.setAttribute('download','rama_model.usdz');d0.replaceWith(d);var nt=document.createElement('a');nt.href=u;nt.target='_blank';nt.rel='noopener';nt.textContent='↗ rama_model.usdz';nt.style.cssText='display:block;font-size:12px;opacity:.75;margin-top:4px;color:inherit';d.insertAdjacentElement('afterend',nt);
+  st(qs?T.ready:T.ql,!qs);
+  if(qs&&!window.__arNoNav)setTimeout(function(){try{a.click()}catch(e){}},50); // próba bez dodatkowego dotknięcia; gdy iOS wymaga gestu – zostaje 1 dotknięcie
+ }).catch(function(e){st(T.bad+e,true)})}
+</script></body></html>

@@ -1,0 +1,21 @@
+# lista dozwolonych: wszystko inne jest ignorowane (bez pakietu historii, rysunków, tokenów, deploy_response)
+/*
+!/.gitignore
+!/.nojekyll
+!/index.html
+!/sw.js
+!/ar.html
+!/manifest*.json
+!/*.webmanifest
+!/icons/
+!/vendor/
+!/ar/
+!/img/
+!/lib/
+!/LICENCJE.txt
+!/historia_demo.js
+historia_pakiet*
+deploy_response*
+*.orig
+*.pdf
+*.zip

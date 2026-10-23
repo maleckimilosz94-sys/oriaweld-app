@@ -1,0 +1,4 @@
+Rama beta – demo historii (historia_demo.js)
+Rysunki źródłowe użyte w demo (miniatury i modele 3D są utworami zależnymi, CC BY-SA 4.0):
+- Precious Plastic: © Stichting One Army, CC BY-SA 4.0 – https://github.com/ONEARMY/precious-plastic-kit
+- "Rysunek techniczny wał" – Leonard724, Wikimedia Commons, CC BY-SA 4.0

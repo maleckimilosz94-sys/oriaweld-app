@@ -1,0 +1,15 @@
+/* ORIAWELD SI – service worker (tylko cache/offline, bez logiki aplikacji) */
+var VERSION='oria-88-39441362';
+var CORE=['./','./index.html','./ar.html','./vendor/lz-string.min.js','./vendor/ar-holo-ios.js','./manifest.webmanifest','./icons/icon-32.png','./icons/icon-180.png','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-192.png','./icons/maskable-512.png','./img/warsztat_noc.jpg','./img/warsztat_noc_wide.jpg','./vendor/fonts/Michroma-Regular.ttf','./vendor/tesseract.min.js','./vendor/model-viewer.min.js','./vendor/fflate.min.js','./vendor/GLTFExporter.js','./vendor/USDZExporter.js','./vendor/engine/engine.js','./vendor/worker.min.js','./lib/three.min.js','./lib/OrbitControls.js'];
+self.addEventListener('install',function(e){e.waitUntil(caches.open(VERSION).then(function(c){return Promise.all(CORE.map(function(u){return c.add(new Request(u,{cache:'reload'})).catch(function(){})}))}))});
+self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(k){return Promise.all(k.filter(function(n){return n.indexOf('oria-')==0&&n!==VERSION}).map(function(n){return caches.delete(n)}))}).then(function(){return self.clients.claim()}))});
+self.addEventListener('message',function(e){if(e.data==='skip')self.skipWaiting()});
+function put(req,res){if(res&&res.ok&&res.type==='basic'){var c=res.clone();caches.open(VERSION).then(function(x){x.put(req,c)})}return res}
+self.addEventListener('fetch',function(e){var r=e.request;if(r.method!=='GET')return;var u=new URL(r.url);if(u.origin!==location.origin)return;if(/historia_[^\/]*\.js$/.test(u.pathname))return;
+ if(/\/(vendor\/)?ar\/[^\/]+\.(usdz|glb)$/.test(u.pathname)){var ty=/\.usdz$/.test(u.pathname)?'model/vnd.usdz+zip':'model/gltf-binary',nm=u.pathname.split('/').pop();
+  e.respondWith(caches.open('arfiles').then(function(c){return c.match(u.origin+u.pathname)}).then(function(m){return (m?Promise.resolve(m):fetch(u.origin+u.pathname)).then(function(m){if(!m.ok)return m;return m.arrayBuffer().then(function(buf){var n=buf.byteLength,h={'Content-Type':ty,'Content-Disposition':'inline; filename="'+nm+'"','Cache-Control':'no-store','Accept-Ranges':'bytes'},g=/bytes=(\d*)-(\d*)/.exec(r.headers.get('range')||'');
+   if(g){var s0=g[1]?+g[1]:Math.max(0,n-(+g[2])),e0=g[1]&&g[2]?Math.min(+g[2],n-1):n-1;if(s0>=n)return new Response(null,{status:416,headers:{'Content-Range':'bytes */'+n}});h['Content-Range']='bytes '+s0+'-'+e0+'/'+n;h['Content-Length']=String(e0-s0+1);return new Response(buf.slice(s0,e0+1),{status:206,headers:h})}
+   h['Content-Length']=String(n);return new Response(buf,{status:200,headers:h})})})}));return}
+ if(r.mode==='navigate'||/\/(index\.html)?$/.test(u.pathname)){e.respondWith(fetch(r).then(function(res){return put(r,res)}).catch(function(){return caches.match(r,{ignoreSearch:true}).then(function(m){return m||caches.match('./index.html')})}));return}
+ if(/\/(vendor|icons|img|lib|fonts)\//.test(u.pathname)||/\.(js|css|png|jpg|svg|ttf|woff2?|wasm|onnx|gz|json|webmanifest)$/.test(u.pathname)){e.respondWith(caches.match(r).then(function(m){return m||fetch(r).then(function(res){return put(r,res)})}));}
+});
