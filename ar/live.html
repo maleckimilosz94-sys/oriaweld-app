@@ -1,4 +1,24 @@
-<!doctype html><html lang="pl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rama – AR</title><style>body{font-family:system-ui;margin:16px;background:#111;color:#eee}li{margin:0 0 18px}a{color:#f90}img{border-radius:10px}</style><style>/* v90b: kroki przed Quick Look – od razu, czerwone (iOS nie zna stanu płaszczyzny) */
+<!doctype html><html lang="pl"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rama – AR</title><style>body{font-family:system-ui;margin:16px;background:#111;color:#eee}li{margin:0 0 18px}a{color:#f90}img{border-radius:10px}</style><style id="m16m17">/* M16: wygląd ORIAWELD + PL/EN/DE (logika bez zmian) */
+@font-face{font-family:Michroma;src:url(../vendor/fonts/Michroma-Regular.ttf);font-display:swap}
+html,body{min-height:100%}body{margin:0;padding:calc(22px + env(safe-area-inset-top)) max(18px,env(safe-area-inset-right)) calc(22px + env(safe-area-inset-bottom)) max(18px,env(safe-area-inset-left));background:radial-gradient(120% 70% at 50% 18%,#16203a,#0b0d14 55%,#030407) fixed;color:#e2e8f0;font:15px/1.5 system-ui,-apple-system,sans-serif;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;text-align:center}
+.brand{font:12px Michroma,sans-serif;letter-spacing:.22em;color:#22d3ee;text-shadow:0 0 10px rgba(34,211,238,.5);margin:6px 0 26px}
+h1{font:600 20px/1.3 Michroma,sans-serif;letter-spacing:.06em;margin:0 0 10px;color:#fff;text-transform:uppercase}
+p{margin:0 0 14px;color:#94a3b8;max-width:420px}
+#swst{color:#67e8f9;font-size:13px;padding:8px 14px;border:1px solid rgba(34,211,238,.3);border-radius:12px;background:rgba(34,211,238,.07)}
+ul{list-style:none;padding:0;margin:10px 0 0;display:flex;flex-direction:column;align-items:center;gap:16px;width:100%}
+#go{display:inline-block;line-height:0;border-radius:14px;box-shadow:0 0 22px rgba(34,211,238,.35)}#go img{border-radius:14px;max-width:min(260px,82vw);height:auto}
+#back{font:600 12px Michroma,sans-serif;letter-spacing:.06em;min-height:48px;padding:12px 22px;border-radius:12px;border:1px solid #8b5cf6;background:rgba(139,92,246,.08);color:#ddd6fe;cursor:pointer}
+/* M17: premium / chłodny / techniczny – tylko CSS */
+body{background:linear-gradient(180deg,#0e121b 0,#0b0d14 360px) fixed,#0b0d14!important;color:#e3e8ef;font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+.brand{font-size:11px;letter-spacing:.28em;color:#22d3ee;text-shadow:none;margin:6px 0 30px;opacity:.9}
+h1{font-size:17px;letter-spacing:.1em;font-weight:400;color:#e3e8ef}
+p{color:#9aa4b4}
+#swst{color:#cbd5e1;font-size:12.5px;padding:7px 12px;border:1px solid rgba(148,163,184,.24);border-radius:8px;background:#10141d;letter-spacing:.02em}
+#go{border-radius:10px;box-shadow:0 0 0 1px rgba(148,163,184,.18),0 12px 30px rgba(0,0,0,.45)}#go img{border-radius:10px}
+#back{display:inline-flex;align-items:center;gap:8px;font-weight:400;font-size:11.5px;letter-spacing:.1em;min-height:48px;padding:12px 20px;border-radius:8px;border:1px solid rgba(148,163,184,.24);background:transparent;color:#cbd5e1}
+#back::before{content:"";width:18px;height:18px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.5 5.5L8 12l6.5 6.5'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14.5 5.5L8 12l6.5 6.5'/%3E%3C/svg%3E") center/contain no-repeat}
+#back:active{border-color:#22d3ee}
+</style><style>/* v90b: kroki przed Quick Look – od razu, czerwone (iOS nie zna stanu płaszczyzny) */
 #arpre{width:100%;max-width:420px;margin:0 auto 16px;padding:12px 14px;border:2px solid #ef4444;border-radius:12px;color:#ef4444;box-sizing:border-box;text-align:center}
 #arpre b{display:block;font-size:17px}#arpre small{display:block;font-size:13px;color:#ef4444;opacity:.9}
 @keyframes arPulse{0%,100%{opacity:1}50%{opacity:.3}}
