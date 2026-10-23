@@ -1,0 +1,6 @@
+/* v90b: teksty startu AR – jeden słownik dla index.html (scalany do TX/T() modułu AR) i ar/live.html; język = localStorage 'oria_lang' (lub ?lang=) */
+window.AR_I18N={
+ pl:{hold:'Trzymaj telefon w miejscu',aim:'Skieruj aparat na płaską powierzchnię',placed:'Model ustawiony',find:'Znajdź płaską powierzchnię i ustaw model',ph:'Stół / płaska powierzchnia ok. 1 m przed Tobą',aimQL:'Skieruj aparat na płaską powierzchnię, potem dotknij przycisk AR',m1:'≈ 1 m'},
+ en:{hold:'Hold your phone still',aim:'Point the camera at a flat surface',placed:'Model placed',find:'Find a flat surface and place the model',ph:'Table / flat surface about 1 m ahead',aimQL:'Point the camera at a flat surface, then tap the AR button',m1:'≈ 1 m'},
+ de:{hold:'Halte das Handy ruhig',aim:'Richte die Kamera auf eine ebene Fläche',placed:'Modell platziert',find:'Finde eine ebene Fläche und platziere das Modell',ph:'Tisch / ebene Fläche ca. 1 m vor dir',aimQL:'Richte die Kamera auf eine ebene Fläche und tippe dann auf den AR-Knopf',m1:'≈ 1 m'}};
+window.AR_LANG=function(){var l=null;try{l=new URLSearchParams(location.search).get('lang')}catch(e){}if(!/^(pl|en|de)$/.test(l||'')){try{l=localStorage.getItem('oria_lang')}catch(e){}}return /^(pl|en|de)$/.test(l||'')?l:'pl'};
