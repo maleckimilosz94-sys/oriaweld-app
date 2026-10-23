@@ -1,5 +1,5 @@
 /* ORIAWELD SI – service worker (tylko cache/offline, bez logiki aplikacji) */
-var VERSION='oria-90-8bbb786b';
+var VERSION='oria-90a-a1c5e2f0';
 var CORE=['./','./index.html','./ar.html','./vendor/lz-string.min.js','./vendor/ar-holo-ios.js','./manifest.webmanifest','./icons/icon-32.png','./icons/icon-180.png','./icons/icon-192.png','./icons/icon-512.png','./icons/maskable-192.png','./icons/maskable-512.png','./img/warsztat_noc.jpg','./img/warsztat_noc_wide.jpg','./vendor/fonts/Michroma-Regular.ttf','./vendor/tesseract.min.js','./vendor/model-viewer.min.js','./vendor/fflate.min.js','./vendor/GLTFExporter.js','./vendor/USDZExporter.js','./vendor/engine/engine.js','./vendor/worker.min.js','./lib/three.min.js','./lib/OrbitControls.js'];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(VERSION).then(function(c){return Promise.all(CORE.map(function(u){return c.add(new Request(u,{cache:'reload'})).catch(function(){})}))}))});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(k){return Promise.all(k.filter(function(n){return n.indexOf('oria-')==0&&n!==VERSION}).map(function(n){return caches.delete(n)}))}).then(function(){return self.clients.claim()}))});
