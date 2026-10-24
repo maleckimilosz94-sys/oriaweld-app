@@ -14,6 +14,14 @@
 !/lib/
 !/LICENCJE.txt
 !/historia_demo.js
+!/gesty.js
+!/gesty_i18n.js
+!/gesty.css
+!/gesty_ui.js
+!/rozklad_core.js
+!/rozklad.js
+!/rozklad.css
+!/dzwieki.js
 historia_pakiet*
 deploy_response*
 *.orig
