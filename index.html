@@ -1,4 +1,4 @@
-<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Rama beta – rysunek → 3D</title>
+<!doctype html><html lang="pl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>ORIAWELD beta – rysunek → 3D</title>
 <style>*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,sans-serif;background:#f5f7fb;color:#1f2937;padding-bottom:80px}
 header{position:sticky;top:0;background:#fff;padding:10px 12px;display:flex;align-items:center;gap:10px;z-index:2;box-shadow:0 1px 0 #e5e7eb}
 #back{background:none;border:0;color:#111;font-size:28px;width:44px}#bar{flex:1;height:6px;background:#e5e7eb;border-radius:4px;overflow:hidden}#prog{height:100%;background:#3b82f6;transition:width .3s}#cnt{font-size:13px;color:#6b7280}
@@ -2505,8 +2505,8 @@ function autoTabs(m){var t=document.getElementById('tabs');if(!t)return;t.style.
 // --- 6) rysunek cyfrowy w układzie kartki
 function redrawSVG(m){var sh=m.info.sheet,W=sh.width,H=sh.height,k=m.mmpx,o=[],C={g:'#16a34a',o:'#f97316',b:'#2563eb',e:'#9ca3af'},fs=Math.max(12,Math.round(Math.min(W,H)*0.018));
  o.push('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" font-family="DejaVu Sans,Arial,sans-serif"><defs><marker id="ar" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,1 L10,5 L0,9z" fill="context-stroke"/></marker></defs><rect width="100%" height="100%" fill="#fff"/><rect x="8" y="8" width="'+(W-16)+'" height="'+(H-16)+'" fill="none" stroke="#111" stroke-width="3"/>');
- var tb=m.res.titleBlockBox;if(tb)o.push('<rect x="'+tb.x+'" y="'+tb.y+'" width="'+tb.w+'" height="'+tb.h+'" fill="none" stroke="#111" stroke-width="2"/><text x="'+(tb.x+10)+'" y="'+(tb.y+fs*1.5)+'" font-size="'+fs+'">Rama beta – rysunek cyfrowy</text>');
- else o.push('<text x="'+(W-20)+'" y="'+(H-20)+'" font-size="'+fs+'" text-anchor="end" fill="#555">Rama beta – rysunek cyfrowy · '+KINDS[m.kind]+'</text>');
+ var tb=m.res.titleBlockBox;if(tb)o.push('<rect x="'+tb.x+'" y="'+tb.y+'" width="'+tb.w+'" height="'+tb.h+'" fill="none" stroke="#111" stroke-width="2"/><text x="'+(tb.x+10)+'" y="'+(tb.y+fs*1.5)+'" font-size="'+fs+'">ORIAWELD beta – rysunek cyfrowy</text>');
+ else o.push('<text x="'+(W-20)+'" y="'+(H-20)+'" font-size="'+fs+'" text-anchor="end" fill="#555">ORIAWELD beta – rysunek cyfrowy · '+KINDS[m.kind]+'</text>');
  m.V.ortho.forEach(function(v){var nm=v===m.V.front?'PRZÓD':v===m.V.top?'GÓRA':v===m.V.side?'BOK':'';o.push('<polygon points="'+v.poly.map(function(p){return p.join(',')}).join(' ')+'" fill="#f8fafc" stroke="#111" stroke-width="3" stroke-linejoin="round"/>');
   (v.contours||[]).forEach(function(c){if(c.length>2)o.push('<polygon points="'+c.map(function(p){return p.join(',')}).join(' ')+'" fill="none" stroke="#111" stroke-width="1.5"/>');});
   if(nm)o.push('<text x="'+v.ob.x+'" y="'+(v.ob.y-8-fs*2.6)+'" font-size="'+fs+'" font-weight="bold" fill="#1d4ed8">'+nm+'</text>');
@@ -3913,4 +3913,20 @@ new MutationObserver(function(){deco(document.getElementById('arxo'));hh()}).obs
 if(/demo=fala/.test(location.hash))setTimeout(function(){wave(innerWidth/2,innerHeight*.5)},300);
 })();
 </script><script src="dzwieki.js"></script>
-</body></html>
+<style id="m25">/* M25 */
+.hlogo sub,.logo sub,#splash .logo sub{color:#8b5cf6!important;border-color:rgba(139,92,246,.55)!important;text-shadow:none!important}
+header::after{background:linear-gradient(90deg,transparent,rgba(34,211,238,.45) 20%,rgba(34,211,238,.25) 80%,transparent)!important}
+#splash.m21 .logo sub{display:inline!important;position:relative!important;right:auto!important;bottom:auto!important;top:-1.4em;font:400 10px Michroma,sans-serif!important;letter-spacing:.18em;margin-left:.3em}
+#splash .m21rule{background:linear-gradient(90deg,transparent,#22d3ee,transparent)!important}
+#splash .m21node{fill:#22d3ee!important}#splash circle[fill="#a78bfa"]{fill:#67e8f9!important}
+#splash .sprog i{background:linear-gradient(90deg,#0e7490,#22d3ee)!important}
+/* /M25 */</style><style id="m26">/* M26: przyciski granat 80% + hairline cyan 60%, poswiata -35% */
+html:not(.light) .main,html:not(.light) button.main,html:not(.light) .main.alt,html:not(.light) .main.orange,html:not(.light) #rfxm .rgo{background:rgba(16,20,37,.8)!important;background-image:none!important;border:1px solid rgba(34,211,238,.6)!important;color:#e6fbff!important;min-height:48px}
+html:not(.light) .main:active,html:not(.light) #rfxm .rgo:active{background:rgba(22,28,48,.9)!important}
+html:not(.light) #m19bg{opacity:.64!important} /* poswiata/mgla canvasu M19 -36%, pod spodem html #0b0d14 */
+/* /M26 */</style><style id="m26b">/* M26b: SI pelne #8b5cf6 (obwodka+litery, nadal 1 fiolet), hierarchia przyciskow skanu, poswiata .60 */
+.hlogo sub,.logo sub,#splash .logo sub{color:#8b5cf6!important;border-color:#8b5cf6!important;opacity:1!important}
+html:not(.light) .main.fbtn:not(.alt){border-color:rgba(34,211,238,.6)!important;box-shadow:inset 0 0 0 999px rgba(34,211,238,.06)!important}
+html:not(.light) .main.alt.fbtn{border-color:rgba(34,211,238,.35)!important}
+html:not(.light) #m19bg{opacity:.60!important}
+/* /M26b */</style></body></html>
