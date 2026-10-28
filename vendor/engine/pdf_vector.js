@@ -175,7 +175,7 @@ function sideProfile(v,k){const P=v.outline&&v.outline.poly;if(!P||P.length<4||v
 async function pdfVector(data,opts={}){
   const on=opts.pdfVec===true||(typeof window!=='undefined'&&window.__pdfVec===true);
   if(!on)return null;
-  const pdfjs=opts.pdfjs||await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const pdfjs=opts.pdfjs||await import((typeof window!=='undefined'&&typeof process==='undefined')?'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.min.mjs':'pdfjs-dist/legacy/build/pdf.mjs');
   const P=await extractStrokes(pdfjs,data);const C=classify(P);const views=loops(P.W,P.H,C.geo,opts.centerline!==false);
   const main=views.filter(v=>!v.iso);
   const mv=main.filter(v=>v.windows.length+v.holes.length>0).sort((a,b)=>(b.windows.length+b.holes.length)-(a.windows.length+a.holes.length)||b.outline.area_pt2-a.outline.area_pt2)[0]||main[0];
