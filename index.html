@@ -3288,14 +3288,30 @@ function overlay(withTable){var ov=document.getElementById('ar');if(ov)arClose(f
  '<p class="m11env">'+[ENV.ios?'iOS':ENV.android?'Android':'desktop',ENV.https?'HTTPS':'HTTP',ENV.standalone?'PWA':'browser','QL:'+(ENV.qlook?'tak':'nie'),'WebXR:'+(ENV.webxr?'tak':'nie'),'SW:'+(ENV.sw?'tak':'nie')].join(' · ')+'</p>';
  document.body.appendChild(ov);ov.querySelector('#arx').onclick=function(){arClose(false)};ov.querySelector('#arHist').onclick=function(){arClose(true)};ov.__seq=window.__arSeq;ov.querySelector('#arT').onchange=function(){openAR(this.checked)};return ov}
 function M11open(withTable){
- /* v88b: na iOS bez AR w aplikacji – kopia działającej strony testowej ar/: demo → ar/dN.usdz, własny projekt → zapis ar/live.usdz do cache, potem przejście do ar/live.html */
- if(ENV.ios&&!withTable){var hid=({"p1792730002810_617008":"d1","p1792730062141_429423":"d2","p1792730092210_994554":"d3","p1792730343735_882047":"d4","p1792730088013_521978":"d5","p1792730277882_175983":"d6","p1792731129150_336551":"d7"})[window.__histId];if(hid&&document.getElementById('hname')){location.href='ar/live.html?f='+hid+'&v='+Date.now()+'&lang='+L();return}
-  var ov0=overlay(false);st(ov0,({en:'Preparing AR model…',de:'AR-Modell wird vorbereitet…'})[L()]||'Przygotowuję model AR…');/* oria-124: bez kalibracji; limit czasu + ponów */setTimeout(function(){if(!live(ov0)||window.__arLast&&window.__arLast.usdz&&ov0.__done)return;var a=ov0.querySelector('#m11act');st(ov0,({en:'AR model is taking too long.',de:'AR-Modell dauert zu lange.'})[L()]||'Model AR przygotowuje się za długo.',true);if(a){a.innerHTML='<button class="main orange m11go" id="arRetry">↻ '+(({en:'Retry',de:'Erneut'})[L()]||'Ponów')+'</button>';a.querySelector('#arRetry').onclick=function(){arClose(false);setTimeout(function(){openAR(false)},50)}}},20000);
+ /* oria-126: iOS PWA – Quick Look w aplikacji nic nie robi; share / karta Safari. Safari: live.html auto. */
+ if(ENV.ios&&!withTable){var hid=({"p1792730002810_617008":"d1","p1792730062141_429423":"d2","p1792730092210_994554":"d3","p1792730343735_882047":"d4","p1792730088013_521978":"d5","p1792730277882_175983":"d6","p1792731129150_336551":"d7"})[window.__histId];
+  if(hid&&document.getElementById('hname')){var du='ar/live.html?f='+hid+'&v='+Date.now()+'&lang='+L();if(ENV.standalone){try{window.open(du,'_blank','noopener')}catch(e){location.href=du}return}location.href=du;return}
+  var ov0=overlay(false);st(ov0,({en:'Preparing AR model…',de:'AR-Modell wird vorbereitet…'})[L()]||'Przygotowuję model AR…');
+  setTimeout(function(){if(!live(ov0)||ov0.__done)return;var a=ov0.querySelector('#m11act');st(ov0,({en:'AR model is taking too long.',de:'AR-Modell dauert zu lange.'})[L()]||'Model AR przygotowuje się za długo.',true);if(a){a.innerHTML='<button class="main orange m11go" id="arRetry">↻ '+(({en:'Retry',de:'Erneut'})[L()]||'Ponów')+'</button>';a.querySelector('#arRetry').onclick=function(){arClose(false);setTimeout(function(){openAR(false)},50)}}},20000);
+  function iosReady(ov,cacheUrl){if(!live(ov)||ov.__done)return;ov.__done=1;var act=ov.querySelector('#m11act');if(!act)return;
+   var file=null,ok=false;try{file=new File([window.__arLast.usdz],'rama.usdz',{type:'model/vnd.usdz+zip'});ok=!!(navigator.canShare&&navigator.canShare({files:[file]}))}catch(e){}
+   var abs=cacheUrl?new URL(cacheUrl,location.href).href:null,h='',L0=L();
+   var shareLab=({en:'Share .usdz (Files / Quick Look)',de:'.usdz teilen (Dateien / Quick Look)'}[L0])||'Udostępnij plik .usdz (Pliki / Quick Look)';
+   var tabLab=({en:'Open in Safari (AR)',de:'In Safari öffnen (AR)'}[L0])||'Otwórz w Safari (AR)';
+   if(abs&&!ENV.standalone&&ENV.qlook)h+='<a id="arQL" rel="ar" href="'+abs+'#allowsContentScaling=0"><img src="ar/ar_go.png" width="260" height="60" alt="AR" style="display:block;margin:0 auto;border-radius:12px"></a>';
+   if(abs)h+='<a id="arTab" class="main orange m11go" href="'+(ENV.standalone?new URL('ar/live.html?f=live&v='+Date.now()+'&lang='+L0,location.href).href:abs)+'" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;margin:10px 0">'+tabLab+'</a>';
+   if(ok)h+='<button class="main orange m11go" id="arShare" style="margin-top:8px">⇪ '+shareLab+'</button>';
+   if(!h){st(ov,({en:'No cache – refresh the page.',de:'Kein Cache – Seite neu laden.'}[L0])||'Brak pamięci podręcznej – odśwież stronę.',true);return}
+   act.innerHTML=h;st(ov,({en:'Ready – share the file or open in Safari.',de:'Fertig – Datei teilen oder in Safari öffnen.'}[L0])||'Gotowe – udostępnij plik albo otwórz w Safari.');
+   var sb=act.querySelector('#arShare');if(sb)sb.onclick=function(){navigator.share({files:[file]}).catch(function(){})};
+   if(ENV.standalone&&ok){setTimeout(function(){try{navigator.share({files:[file]})}catch(e){}},280)}
+   else if(!ENV.standalone&&abs&&ENV.qlook){setTimeout(function(){var a=act.querySelector('#arQL');try{a&&a.click()}catch(e){}},200)}
+  }
   __arGet(false,function(glb,w,usdzP){if(!live(ov0))return;usdzP.then(function(ub){if(!live(ov0))throw 0;window.__arLast={glb:glb,usdz:ub};return sameOrigin(ub,'live.usdz')}).then(function(u){
-    if(!live(ov0))return;ov0.__done=1;if(u){location.href='ar/live.html?f=live&auto=1&v='+Date.now()+'&lang='+L();return}
-    var act=ov0.querySelector('#m11act');var ok=false;try{ok=!!(navigator.canShare&&navigator.canShare({files:[new File([window.__arLast.usdz],'rama.usdz',{type:'model/vnd.usdz+zip'})]}))}catch(e){}
-    ov0.__done=1;st(ov0,'Brak pamięci podręcznej (service worker) – odśwież stronę albo udostępnij plik.',true);
-    if(act&&ok){act.innerHTML='<button class="main orange m11go" id="arShare">⇪ Udostępnij plik .usdz</button>';act.querySelector('#arShare').onclick=function(){navigator.share({files:[new File([window.__arLast.usdz],'rama.usdz',{type:'model/vnd.usdz+zip'})]}).catch(function(){})}}
+    if(!live(ov0))return;
+    /* PWA: auto live.html+rel=ar nic nie otwiera – share/Safari. Safari: live.html auto OK gdy cache jest. */
+    if(ENV.standalone||!u){iosReady(ov0,u);return}
+    ov0.__done=1;location.href='ar/live.html?f=live&auto=1&v='+Date.now()+'&lang='+L();
    }).catch(function(e){if(e!==0&&live(ov0))st(ov0,T('eExp')+e,true)})});return}
  /* v87: AR jako prosty moduł – plik .usdz pod prawdziwym adresem ar/live.usdz (SW, model/vnd.usdz+zip),
     link <a rel="ar"> z dokładnie jednym <img>, awaryjnie udostępnienie pliku (navigator.share). Bez łańcucha x-safari. */
