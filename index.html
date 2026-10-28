@@ -392,6 +392,7 @@ details.wkl summary{color:#b8c4d0;cursor:pointer;padding:8px 0}
 html.light .kbadge .cls{color:#0f172a}
 header #patchip{margin-left:6px;flex:none;pointer-events:none}
 </style>
+<style id="oria131">#ar .arTbl,#ar .m11dl,#ar .m11env,#ar #m11act a[href$="ar/"]{display:none!important}</style>
 </head>
 <body><div id="langsel" hidden><div class="lwrap"><div class="ltitle">WYBIERZ JĘZYK<span>CHOOSE LANGUAGE · SPRACHE WÄHLEN</span></div><div class="flags"><button class="flag" data-lang="en"><span class="fimg"><svg viewBox="0 0 60 60" class="fsvg"><clipPath id="fcen"><circle cx="30" cy="30" r="30"/></clipPath><g clip-path="url(#fcen)"><rect width="60" height="60" fill="#012169"/><path d="M0 0L60 60M60 0L0 60" stroke="#fff" stroke-width="10"/><path d="M0 0L60 60M60 0L0 60" stroke="#C8102E" stroke-width="3.5"/><path d="M30 0V60M0 30H60" stroke="#fff" stroke-width="16"/><path d="M30 0V60M0 30H60" stroke="#C8102E" stroke-width="9"/></g></svg></span><span class="fcode">EN</span><span class="fname">English</span></button><button class="flag" data-lang="pl"><span class="fimg"><svg viewBox="0 0 60 60" class="fsvg"><clipPath id="fcpl"><circle cx="30" cy="30" r="30"/></clipPath><g clip-path="url(#fcpl)"><rect width="60" height="30" fill="#f4f5f7"/><rect y="30" width="60" height="30" fill="#DC143C"/></g></svg></span><span class="fcode">PL</span><span class="fname">Polski</span></button><button class="flag" data-lang="de"><span class="fimg"><svg viewBox="0 0 60 60" class="fsvg"><clipPath id="fcde"><circle cx="30" cy="30" r="30"/></clipPath><g clip-path="url(#fcde)"><rect width="60" height="20" fill="#141414"/><rect y="20" width="60" height="20" fill="#DD0000"/><rect y="40" width="60" height="20" fill="#FFCE00"/></g></svg></span><span class="fcode">DE</span><span class="fname">Deutsch</span></button></div><i class="sline"></i></div></div><div id="splash"><img class="sicon" src="icons/icon-512.png" alt=""><div class="logo">ORIAWELD<sub>SI</sub></div><div class="tag">STEEL. PRECISION. BUILT.</div><i class="sline"></i><div class="sprog"><i></i></div><div class="sload">Ładowanie…</div></div><header><button id="back">‹</button><span class="hlogo">ORIAWELD<sub>SI</sub></span><div id="bar"><div id="prog"></div></div><span id="cnt"></span></header><div id="app"></div><nav id="tabs"><button>📷<span>Skanuj</span></button><button>📄<span>Rysunek</span></button><button>⬡<span>Model</span></button><button>🕘<span>Historia</span></button></nav>
 <script src="historia_demo.js"></script>
@@ -3385,7 +3386,7 @@ function M11open(withTable){
     setTimeout(function(){document.removeEventListener('visibilitychange',f);if(!hid&&!document.hidden&&!(mv.__arOn))st(ov,T('eNoOpen'),true)},3500)}
    btn.onclick=launch;
    if(ENV.desktop)st(ov,T('eDesk'),true);else if(!ENV.https)st(ov,T('eHttps'),true);
-   else{st(ov,T('ready'));mv.addEventListener('load',function(){launch()},{once:true})}
+   else if(ENV.android&&r.how=='cache'){launchMV()}else{st(ov,T('ready'));mv.addEventListener('load',function(){launch()},{once:true})}
   }).catch(function(e){st(ov,T('eExp')+e,true)});
  },withTable);
  wireDl(ov,withTable,true)}
