@@ -122,6 +122,7 @@ function readDrawing(input,opt){opt=opt||{};var LG=opt.log||function(){};var t0=
   LG('tłumienie: kreskowanie '+nh+', kreski osi '+nd);var geoO=sp;
  // 7) obrys części w każdym widoku: największy zamknięty kontur
  var gc=new cv.Mat(),kc=Math.max(3,Math.round(Math.min(W,H)*0.008)),k3=cv.getStructuringElement(cv.MORPH_RECT,new cv.Size(kc,kc));cv.morphologyEx(geoO,gc,cv.MORPH_CLOSE,k3);k3.delete();
+ var G0=!!(opt.geoG0||(typeof window!=='undefined'&&window.__geoG0)),inner=[];if(G0){var hc=new cv.MatVector(),hh=new cv.Mat(),gcc=gc.clone();cv.findContours(gcc,hc,hh,cv.RETR_CCOMP,cv.CHAIN_APPROX_SIMPLE);for(var i=0;i<hc.size();i++){if(hh.data32S[i*4+3]<0)continue;var c=hc.get(i),a=cv.contourArea(c);if(a<SA*0.0005)continue;var ap=new cv.Mat();cv.approxPolyDP(c,ap,Math.max(1.5,0.006*cv.arcLength(c,true)),true);var pts=[];for(var j=0;j<ap.rows;j++)pts.push([ap.data32S[j*2],ap.data32S[j*2+1]]);ap.delete();inner.push({a:a,bb:cv.boundingRect(c),pts:pts});}hc.delete();hh.delete();gcc.delete();}
  var ec=new cv.MatVector(),eh=new cv.Mat();cv.findContours(gc,ec,eh,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);var filled=cv.Mat.zeros(H,W,cv.CV_8U);cv.drawContours(filled,ec,-1,new cv.Scalar(255),-1);ec.delete();eh.delete();
  var ko=Math.max(5,Math.round(Math.min(W,H)*0.012)),k5=cv.getStructuringElement(cv.MORPH_RECT,new cv.Size(ko,ko));cv.morphologyEx(filled,gc,cv.MORPH_OPEN,k5);k5.delete();var filled0=filled;
  var oc=new cv.MatVector(),oh=new cv.Mat();cv.findContours(gc,oc,oh,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);var cand=[];
@@ -132,7 +133,7 @@ function readDrawing(input,opt){opt=opt||{};var LG=opt.log||function(){};var t0=
 
  views.forEach(function(v){var best=null;cand.forEach(function(c){var b=c.bb,vb=v.bb;if(b.x>=vb.x-2&&b.y>=vb.y-2&&b.x+b.width<=vb.x+vb.width+2&&b.y+b.height<=vb.y+vb.height+2&&(!best||c.a>best.a))best=c;});
   if(!best)cand2.forEach(function(c){var b=c.bb,vb=v.bb;if(b.x>=vb.x-2&&b.y>=vb.y-2&&b.x+b.width<=vb.x+vb.width+2&&b.y+b.height<=vb.y+vb.height+2&&(!best||c.a>best.a))best=c;});
-  v.outline=best?best.pts:null;v.contours=cand.filter(function(c){return c!==best&&c.bb.x>=v.bb.x&&c.bb.y>=v.bb.y&&c.bb.x+c.bb.width<=v.bb.x+v.bb.width&&c.bb.y+c.bb.height<=v.bb.y+v.bb.height}).slice(0,10).map(function(c){return c.pts});});
+  v.outline=best?best.pts:null;v.holes=[];if(G0&&best){inner.forEach(function(h){var q=h.bb,B=best.bb;if(h.a>best.a*0.02&&h.a<best.a*0.9&&q.x>B.x&&q.y>B.y&&q.x+q.width<B.x+B.width&&q.y+q.height<B.y+B.height)v.holes.push(h.pts);});}v.contours=cand.filter(function(c){return c!==best&&c.bb.x>=v.bb.x&&c.bb.y>=v.bb.y&&c.bb.x+c.bb.width<=v.bb.x+v.bb.width&&c.bb.y+c.bb.height<=v.bb.y+v.bb.height}).slice(0,10).map(function(c){return c.pts});});
  views=views.filter(function(v){return v.outline});
  if(!opt.noSplitViews){var extra=[];views.forEach(function(v){if(!v.outline)return;var vb=v.bb,bo=null;cand.forEach(function(c){if(c.pts===v.outline)bo=c;});if(!bo)return;var B=bo.bb;cand.forEach(function(c){if(c===bo)return;var b=c.bb;if(!(b.x>=vb.x-2&&b.y>=vb.y-2&&b.x+b.width<=vb.x+vb.width+2&&b.y+b.height<=vb.y+vb.height+2))return;if(c.a<bo.a*0.3)return;var ox=Math.min(b.x+b.width,B.x+B.width)-Math.max(b.x,B.x),oy=Math.min(b.y+b.height,B.y+B.height)-Math.max(b.y,B.y);var side=ox<=0.1*Math.min(b.width,B.width)&&oy>0.6*Math.min(b.height,B.height)&&b.height>0.6*B.height,stack=oy<=0.1*Math.min(b.height,B.height)&&ox>0.6*Math.min(b.width,B.width)&&b.width>0.6*B.width;if(!side||b.height<0.8*B.height||views.length<2)return;if(extra.some(function(e){var q=e.outB;return Math.min(q.x+q.width,b.x+b.width)>Math.max(q.x,b.x)&&Math.min(q.y+q.height,b.y+b.height)>Math.max(q.y,b.y)}))return;
    var nb=side?{x:b.x,y:vb.y,width:b.width,height:vb.height}:{x:vb.x,y:b.y,width:vb.width,height:b.height};extra.push({bb:nb,outline:c.pts,outB:b,contours:[],splitFrom:1});});if(extra.length){var cut=extra.filter(function(e){return e.splitFrom});}});
@@ -158,7 +159,7 @@ function readDrawing(input,opt){opt=opt||{};var LG=opt.log||function(){};var t0=
   // przeskaluj do obrazu wejściowego
   function P(p){return [Math.round(p[0]/k),Math.round(p[1]/k)];}
   var out={sheetBox:rect(sheet,k),titleBlockBox:tb?rect(tb,k):null,
-   views:views.map(function(v){return {name:v.name,bbox:rect(v.bb,k),outlinePolygon:v.outline.map(P),contours:v.contours.map(function(c){return c.map(P)})};}),
+   views:views.map(function(v){return {name:v.name,bbox:rect(v.bb,k),outlinePolygon:v.outline.map(P),contours:v.contours.map(function(c){return c.map(P)}),holes:(v.holes||[]).map(function(c){return c.map(P)})};}),
    dimensions:dims.map(function(d){d.bbox={x:Math.round(d.bbox.x/k),y:Math.round(d.bbox.y/k),w:Math.round(d.bbox.w/k),h:Math.round(d.bbox.h/k)};if(d.dimLine)d.dimLine=d.dimLine.map(P);return d;}),
    scaleGuess:sg,stats:{textGroups:groups.length,lines:segs.length,charH:Math.round(hm/k)},timing:Math.round(performance.now()-t0)};
   return out;});});}
