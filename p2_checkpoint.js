@@ -7,7 +7,8 @@ function T(s){var L;try{L=(location.hash.match(/lang=(en|pl|de)/)||[])[1]||local
 window.__p2T=T;
 var CHIPS=['rura','płyta','profil','kątownik'],MK='oria_p2_memory';
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-function fid(){try{var fs=[].slice.call(document.querySelectorAll('input[type=file]'));for(var i=0;i<fs.length;i++){var f=fs[i].files&&fs[i].files[0];if(f)return f.name+'#'+f.size+'#'+(f.lastModified||0)}}catch(e){}return ''}
+var __lf='';try{document.addEventListener('change',function(e){var t=e.target;if(t&&t.type==='file'){var f=t.files&&t.files[0];__lf=f?f.name+'#'+f.size+'#'+(f.lastModified||0):''}},true)}catch(e){}
+function fid(){if(__lf)return __lf;try{var fs=[].slice.call(document.querySelectorAll('input[type=file]'));for(var i=0;i<fs.length;i++){var f=fs[i].files&&fs[i].files[0];if(f)return f.name+'#'+f.size+'#'+(f.lastModified||0)}}catch(e){}return ''}
 function fp(m){var s=(m.size||[]).map(function(v){return Math.round((+v||0)/50)*50}).join('x');var g=s+'|v'+((m.views||[]).length||0);var id=m.fileId||fid();return id?'f:'+id+'|'+g:g}
 function mem(){try{return JSON.parse(localStorage.getItem(MK)||'{}')}catch(e){return{}}}
 function kindMap(p){if(p.kind==='Inne'){var t=(p.other||'').toLowerCase();return /blach|gię/.test(t)?'bent':/płyt|plyt/.test(t)?'plate':/rama|profil/.test(t)?'frame':/wał|wal|toczon|obrot/.test(t)?'turned':'mixed'}
@@ -18,7 +19,7 @@ window.p2Checkpoint=function(m){
  var app=document.getElementById('app');if(!app)return Promise.resolve(m);
  var thumb=null;try{var cs=[].slice.call(document.querySelectorAll('#app canvas')).filter(function(c){return c.width>40&&c.height>40}).sort(function(a,b){return b.width*b.height-a.width*a.height});if(cs[0])thumb=cs[0].toDataURL('image/jpeg',.7)}catch(e){}
  if(!thumb&&m.thumb)thumb=m.thumb;
- var key=fp(m),M=mem(),pre=(key&&M[key])||null;
+ var key=fp(m),M=mem(),pre=(key&&key.indexOf('f:')===0&&M[key])||null;/* oria-132: preselect tylko przy tym samym pliku */
  var st={kind:pre&&pre.kind||null,other:pre&&pre.other||'',profile:pre&&pre.profile||null,iso:pre?pre.iso:null,nParts:pre&&pre.nParts||1,marks:[]},step=1,fromMem=!!pre;
  return new Promise(function(res){
   function btns(list,sel,cls){return list.map(function(t,i){return '<button class="'+cls+(t===sel?' on':'')+'" aria-pressed="'+(t===sel)+'" data-i="'+i+'" style="display:block;width:100%;margin:6px 0;padding:12px;border-radius:10px;text-align:left;'+(t===sel?'background:linear-gradient(135deg,#fb923c,#f97316);color:#1a0b02;border:2px solid #fdba74;box-shadow:0 0 0 3px rgba(251,146,60,.35),0 0 18px rgba(249,115,22,.6);font-weight:800':'')+'">'+(t===sel?'✓ ':'')+esc(T(t))+'</button>'}).join('')}

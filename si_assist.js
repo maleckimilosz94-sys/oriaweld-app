@@ -59,21 +59,23 @@ window.siAssist={
   if(bad.indexOf(ax[0].i)<0)return null; /* liczy się gabaryt – reszta tylko gdy główna oś też nie pasuje */
   var A=axes.filter(function(a){return bad.indexOf(a.axis)>=0});
   return {axes:A,factors:factors,maxDim:N[0],maxModel:Math.round(ax[0].s),
-   msg:'Model '+A.map(function(a){return a.name+' '+a.model+' mm'}).join(', ')+' – wymiary z rysunku: '+A.map(function(a){return a.dim+' mm'}).join(', ')+' (×'+A.map(function(a){return a.f}).join(', ×')+').'}}
+   msg:tx('mod')+' '+A.map(function(a){return tx(a.name)+' '+a.model+' mm'}).join(', ')+' – '+tx('fr')+': '+A.map(function(a){return a.dim+' mm'}).join(', ')+' (×'+A.map(function(a){return a.f}).join(', ×')+').'}}
 };
 /* STOP i pytanie przed showAuto2 (tylko Wsparcie SI ON) */
 var DT={pl:['⚠ Wymiary nie pasują do modelu. Co robić?','Dopasuj do wymiarów','Zostaw z rysunku','Popraw ręcznie','Zastosuj','Wpisz gabaryt [mm]'],en:['⚠ Dimensions do not match the model. What to do?','Fit to dimensions','Keep drawing geometry','Correct manually','Apply','Enter overall size [mm]'],de:['⚠ Maße passen nicht zum Modell. Was tun?','An Maße anpassen','Zeichnung beibehalten','Manuell korrigieren','Übernehmen','Gesamtmaß eingeben [mm]']};
 function dt(i){return (DT[L()]||DT.pl)[i]}
+var TX={en:{'długość':'length','wysokość':'height','głębokość':'depth',h:'⚡ Full auto',mod:'Model',fr:'drawing dimensions',fit:'Dimensions did not match the model – fitted to drawing dimensions',keep:'Dimensions do not match the model – drawing geometry kept (to check).',man:'Overall size entered manually: '},de:{'długość':'Länge','wysokość':'Höhe','głębokość':'Tiefe',h:'⚡ Vollautomatik',mod:'Modell',fr:'Maße aus der Zeichnung',fit:'Maße passten nicht zum Modell – an Zeichnungsmaße angepasst',keep:'Maße passen nicht zum Modell – Zeichnungsgeometrie beibehalten (prüfen).',man:'Gesamtmaß manuell eingegeben: '},pl:{h:'⚡ Pełny automat',mod:'Model',fr:'wymiary z rysunku',fit:'Wymiary nie pasowały do modelu – dopasowano do wymiarów z rysunku',keep:'Wymiary nie pasują do modelu – zostawiono geometrię z rysunku (do sprawdzenia).',man:'Gabaryt wpisany ręcznie: '}};
+function tx(k){var d=TX[L()]||TX.pl;return d[k]!=null?d[k]:k}
 function scaleTo(m,k){if(!m.geo||!m.geo.scale)return;m.geo.scale(k[0],k[1],k[2]);m.geo.computeBoundingBox();var c=m.geo.boundingBox;m.size=[c.max.x-c.min.x,c.max.y-c.min.y,c.max.z-c.min.z];if(m.mesh){m.mesh.W=m.size[0];m.mesh.H=m.size[1];m.mesh.D=m.size[2]}}
 function askDim(m,c,done){var app=document.getElementById('app');if(!app)return done();var N=['długość','wysokość','głębokość'];
- app.innerHTML='<h1>⚡ Pełny automat</h1><div class="card" id="dimq" style="border:1px solid #9b74f8;box-shadow:0 0 10px rgba(155,116,248,.45)"><b>'+dt(0)+'</b><p class="small">'+c.msg+'</p>'+
+ app.innerHTML='<h1>'+tx('h')+'</h1><div class="card" id="dimq" style="border:1px solid #9b74f8;box-shadow:0 0 10px rgba(155,116,248,.45)"><b>'+dt(0)+'</b><p class="small">'+c.msg+'</p>'+
  '<div style="display:flex;flex-direction:column;gap:8px"><button class="btn" data-a="fit">'+dt(1)+'</button><button class="btn sec" data-a="keep">'+dt(2)+'</button><button class="btn sec" data-a="man">'+dt(3)+'</button></div><div id="dimman" style="display:none;margin-top:10px"><small>'+dt(5)+'</small>'+
- [0,1,2].map(function(i){return '<label style="display:flex;justify-content:space-between;gap:8px;margin:6px 0">'+N[i]+' <input type="number" inputmode="decimal" data-i="'+i+'" value="'+Math.round(m.size[i])+'" style="width:110px"></label>'}).join('')+'<button class="btn" data-a="apply">'+dt(4)+'</button></div></div>';
+ [0,1,2].map(function(i){return '<label style="display:flex;justify-content:space-between;gap:8px;margin:6px 0">'+tx(N[i])+' <input type="number" inputmode="decimal" data-i="'+i+'" value="'+Math.round(m.size[i])+'" style="width:110px"></label>'}).join('')+'<button class="btn" data-a="apply">'+dt(4)+'</button></div></div>';
  app.querySelectorAll('#dimq button').forEach(function(b){b.onclick=function(){var a=b.dataset.a;
   if(a=='man'){document.getElementById('dimman').style.display='block';return}
-  if(a=='fit'){scaleTo(m,c.factors);m.dimChoice='fit';m.dimNote='Wymiary nie pasowały do modelu – dopasowano do wymiarów z rysunku ('+c.axes.map(function(x){return x.name+' ×'+x.f}).join(', ')+').'}
-  else if(a=='keep'){m.dimChoice='keep';m.dimNote='Wymiary nie pasują do modelu – zostawiono geometrię z rysunku (do sprawdzenia).'}
-  else if(a=='apply'){var k=[1,1,1];app.querySelectorAll('#dimman input').forEach(function(inp){var i=+inp.dataset.i,v=parseFloat(String(inp.value).replace(',','.'));if(v>0&&m.size[i]>0)k[i]=v/m.size[i]});scaleTo(m,k);m.dimChoice='manual';m.dimNote='Gabaryt wpisany ręcznie: '+m.size.map(function(x){return Math.round(x)}).join('×')+' mm.'}
+  if(a=='fit'){scaleTo(m,c.factors);m.dimChoice='fit';m.dimNote=tx('fit')+' ('+c.axes.map(function(x){return tx(x.name)+' ×'+x.f}).join(', ')+').'}
+  else if(a=='keep'){m.dimChoice='keep';m.dimNote=tx('keep')}
+  else if(a=='apply'){var k=[1,1,1];app.querySelectorAll('#dimman input').forEach(function(inp){var i=+inp.dataset.i,v=parseFloat(String(inp.value).replace(',','.'));if(v>0&&m.size[i]>0)k[i]=v/m.size[i]});scaleTo(m,k);m.dimChoice='manual';m.dimNote=tx('man')+m.size.map(function(x){return Math.round(x)}).join('×')+' mm.'}
   if(m.pick&&m.pick.how&&m.dimNote)m.pick.how=m.dimNote+' · '+m.pick.how;
   try{window.__autoResult=window.sum2?sum2(m):window.__autoResult;if(window.__autoResult)window.__autoResult.dimConflict=c,window.__autoResult.dimChoice=m.dimChoice}catch(e){}
   done()}})}
