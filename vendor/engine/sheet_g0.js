@@ -44,7 +44,7 @@ export function buildSheetG0(input, opts={}){
 }
 // Adapter pod przyszłe wpięcie (window.SheetG0Cand(m)) – rejestrowany TYLKO gdy ktoś jawnie zawoła registerSheetG0().
 export function registerSheetG0(win=globalThis){
-  win.SheetG0Cand=function(m){ const v=(m.views||[]).filter(v=>v.outlinePolygon&&v.holes&&v.holes.length).sort((a,b)=>b.holes.length-a.holes.length)[0];
-    if(!v) return null; const d=buildSheetG0({outline:v.outlinePolygon,holes:v.holes,thicknessMm:m.thicknessMm});
+  win.SheetG0Cand=function(m,o={}){ const v=(m.views||[]).filter(v=>v.outlinePolygon&&v.holes&&v.holes.length).sort((a,b)=>b.holes.length-a.holes.length)[0];
+    if(!v) return null; const d=buildSheetG0({outline:v.outlinePolygon,holes:v.holes,thicknessMm:m.thicknessMm,widthMm:o.widthMm});
     return {id:'sheetG0',label:'blacha z obrysu',geom:d.geometry,score:0.9,why:['G0: '+d.holes.length+' otwory']}; };
 }
