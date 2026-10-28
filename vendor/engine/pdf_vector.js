@@ -186,5 +186,5 @@ async function pdfVector(data,opts={}){
     dim_nums:[...new Set((P.text||[]).filter(t=>NUM.test(t.s)).map(t=>num(t.s)))].filter(x=>x>0).sort((a,b)=>a-b),
     windows_total:main.reduce((t,v)=>t+v.windows.length,0),holes_total:main.reduce((t,v)=>t+v.holes.length,0)};
 }
-if(typeof window!=='undefined'){if(window.__pdfVec===undefined)window.__pdfVec=false;window.pdfVector=pdfVector;}
+if(typeof window!=='undefined'){if(window.__pdfVec===undefined)window.__pdfVec=true;window.pdfVector=pdfVector;}
 export {pdfVector,extractStrokes,classify,loops,textMeta};
