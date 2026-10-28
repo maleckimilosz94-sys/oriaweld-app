@@ -2774,7 +2774,15 @@ init();</script><script>(function(){var sp=document.getElementById('splash');if(
 ["(\\d+) otwory\\b","$1 holes","$1 Bohrungen"],["(\\d+) otworów\\b","$1 holes","$1 Bohrungen"],["(\\d+) otwór\\b","$1 hole","$1 Bohrung"],
 ["obrys (\\d+) wierzch\\.","outline $1 vert.","Kontur $1 Eckp."],
 ["⚠ ROZMIAR ZGADNIĘTY \\(brak czytelnych wymiarów\\) – popraw: „Wpisz brakujące wymiary”","⚠ SIZE GUESSED (no readable dimensions) – fix: “Enter missing dimensions”","⚠ GRÖSSE GESCHÄTZT (keine lesbaren Maße) – korrigieren: „Fehlende Maße eingeben“"],
-["wymiary półek","flange dimensions","Schenkelmaße"]
+["wymiary półek","flange dimensions","Schenkelmaße"],
+/* oria-119 BUG-05 residual: manual-dim body + buttons + aria */
+["^Wymiar (\\d+) z (\\d+)","Dimension $1 of $2","Maß $1 von $2"],
+[" · PRZÓD\\b"," · FRONT"," · VORNE"],[" · GÓRA\\b"," · TOP"," · OBEN"],[" · BOK\\b"," · SIDE"," · SEITE"],
+[" · poziomy\\b"," · horizontal"," · waagerecht"],[" · pionowy\\b"," · vertical"," · senkrecht"],
+[" · odczytałem „([^”]*)” – niepewne"," · read “$1” – uncertain"," · gelesen „$1“ – unsicher"],
+["^Pomarańczowa linia = mierzony odcinek\\. Szacunek z obrazu: ≈","Orange line = measured segment. Estimate from image: ≈","Orange Linie = gemessene Strecke. Schätzung aus Bild: ≈"],
+["^Zatwierdź$","Confirm","Bestätigen"],["^Pomiń wszystkie$","Skip all","Alle überspringen"],["^Pomiń$","Skip","Überspringen"],
+["^Obróć w lewo$","Rotate left","Nach links drehen"],["^Obróć w prawo$","Rotate right","Nach rechts drehen"]
 ].forEach(function(r){RU.push([new RegExp(r[0],'g'),r[1],r[2]]);});
 var OR=new WeakMap(),busy=false;function tr(t){if(L=='pl')return t;var k=t.trim();if(!k)return t;var d=DIC[k];if(d)return t.replace(k,d[L]);var o=k,i=L=='en'?1:2;RU.forEach(function(r){o=o.replace(r[0],r[i]);});return o==k?t:t.replace(k,o);}
 function node(n){if(n.nodeType==3){if(n.parentNode&&/^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode.nodeName))return;var o=OR.has(n)?OR.get(n):n.nodeValue;var v=tr(o);if(v!=n.nodeValue){OR.set(n,o);n.nodeValue=v;}else if(L=='pl'&&OR.has(n)){var ov=OR.get(n);OR.delete(n);if(n.nodeValue!==ov)n.nodeValue=ov;}return;}
