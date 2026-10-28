@@ -58,6 +58,10 @@ export function pdfVecToG0View(res){
   const v=res.views.filter(v=>!v.iso&&((v.windows||[]).length+(v.holes||[]).length)>0)
     .sort((a,b)=>(b.windows.length+b.holes.length)-(a.windows.length+a.holes.length)||b.outline.area_pt2-a.outline.area_pt2)[0];
   if(!v) return null;
-  const holes=[...v.windows.map(o=>rectP(o.bbox)),...v.holes.map(o=>circP(o.bbox))];
-  return {outlinePolygon:rectP(v.bbox),holes,widthPt:v.bbox[2],src:'pdfVec',nWin:v.windows.length,nHole:v.holes.length};
+  // pętle z pdf_vector (poly, pt) gdy są; fallback: bbox-prostokąt / 16-kąt
+  const ok=p=>Array.isArray(p)&&p.length>=3;
+  const holes=[...v.windows.map(o=>ok(o.poly)?o.poly:rectP(o.bbox)),...v.holes.map(o=>ok(o.poly)&&o.poly.length>=8?o.poly:circP(o.bbox))];
+  const outline=ok(v.outline&&v.outline.poly)?v.outline.poly:rectP(v.bbox);const M=res.meta||null;
+  return {outlinePolygon:outline,holes,widthPt:v.bbox[2],src:'pdfVec',nWin:v.windows.length,nHole:v.holes.length,outlineVerts:outline.length,loops:ok(v.outline&&v.outline.poly),
+    widthMm:M?v.bbox[2]*M.mmPerPt:null,thicknessMm:M?M.thicknessMm:null,meta:M};
 }

@@ -43,7 +43,8 @@ async function extractStrokes(pdfjs,data){
       if(cur.length)strokes.push({w:+(st.w*sc).toFixed(2),dash:st.dash,segs:cur});cur=[];}
     else if(f===O.fill||f===O.eoFill||f===O.endPath||f===O.fillStroke||f===O.eoFillStroke){cur=[];}
   }
-  return {W:vp.width,H:vp.height,strokes};
+  let text=[];try{const tc=await page.getTextContent();for(const it of tc.items){if(!it.str||!it.str.trim())continue;const p=ap(vp.transform,it.transform[4],it.transform[5]);text.push({s:it.str.trim(),x:p[0],y:p[1],w:it.width||0});}}catch(e){}
+  return {W:vp.width,H:vp.height,strokes,text};
 }
 function bboxOf(segs){let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;for(const [a,b] of segs)for(const p of [a,b]){x0=Math.min(x0,p[0]);y0=Math.min(y0,p[1]);x1=Math.max(x1,p[0]);y1=Math.max(y1,p[1]);}return [x0,y0,x1,y1];}
 
@@ -63,6 +64,19 @@ function classify(P){
   return {geo:cand.filter(s=>s.w===gw),gw,tot,TB,fallback};
 }
 
+// Moore-neighbour trace zewnętrznego brzegu maski (in(x,y)->bool), start = piksel (sx,sy) z tłem po lewej.
+function trace(inF,sx,sy,maxN){const D=[[-1,0],[-1,-1],[0,-1],[1,-1],[1,0],[1,1],[0,1],[-1,1]];const pts=[[sx,sy]];let cx=sx,cy=sy,b=0;
+  for(let n=0;n<maxN;n++){let f=-1;for(let k=0;k<8;k++){const d=(b+k)%8;const X=cx+D[d][0],Y=cy+D[d][1];if(inF(X,Y)){f=d;break;}}
+    if(f<0)break;cx+=D[f][0];cy+=D[f][1];b=(f+6)%8;if(cx===sx&&cy===sy)break;pts.push([cx,cy]);}
+  return pts;}
+function dp(P,eps){if(P.length<3)return P.slice();const keep=new Uint8Array(P.length);keep[0]=keep[P.length-1]=1;const st=[[0,P.length-1]];
+  while(st.length){const [a,b]=st.pop();let md=0,mi=-1;const [x1,y1]=P[a],[x2,y2]=P[b];const L=Math.hypot(x2-x1,y2-y1)||1e-9;
+    for(let i=a+1;i<b;i++){const d=Math.abs((x2-x1)*(y1-P[i][1])-(x1-P[i][0])*(y2-y1))/L;if(d>md){md=d;mi=i;}}
+    if(md>eps){keep[mi]=1;st.push([a,mi],[mi,b]);}}
+  return P.filter((_,i)=>keep[i]);}
+// zamknięta pętla: podziel na dwie połowy (najdalszy punkt od startu), żeby DP nie zjadł pętli
+function simplifyLoop(P,eps){if(P.length<4)return P;let f=0,md=0;for(let i=1;i<P.length;i++){const d=Math.hypot(P[i][0]-P[0][0],P[i][1]-P[0][1]);if(d>md){md=d;f=i;}}
+  const A=dp(P.slice(0,f+1),eps),B=dp(P.slice(f).concat([P[0]]),eps);return A.concat(B.slice(1,-1));}
 function loops(W,H,geo){
   const w=Math.ceil(W*S)+2,h=Math.ceil(H*S)+2;const g=new Uint8Array(w*h);
   const plot=(x,y)=>{for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy;if(X>=0&&Y>=0&&X<w&&Y<h)g[Y*w+X]=1;}};
@@ -92,26 +106,53 @@ function loops(W,H,geo){
   const fa=i=>{if(filled[i]!==undefined)return filled[i];let t=reg[i].area;for(const j of reg[i].nb)if(!reg[j].ink&&j!==outside[i])t+=reg[j].area;for(const k of (kids[i]||[]))t+=0;return filled[i]=t;};
   // dziecko leżące w regionie wewnętrznym rodzica zostało już policzone w area tego regionu? nie — region tła wyklucza piksele dziecka, więc dodaj
   const FA=i=>{let t=fa(i);for(const k of (kids[i]||[]))t+=FA(k);return t;};
+  // pętla jako wielokąt: brzeg wypełnionego komponentu (tusz + jego wnętrze), w pt, uproszczony DP 0.6 pt
+  const loopPoly=i=>{const r=reg[i],ob=outside[i];let sy=-1;for(let y=r.y0;y<=r.y1&&sy<0;y++)if(lab[y*w+r.x0]===i)sy=y;if(sy<0)return null;
+    const inF=(x,y)=>x>=r.x0&&y>=r.y0&&x<=r.x1&&y<=r.y1&&lab[y*w+x]!==ob;
+    const raw=trace(inF,r.x0,sy,8*((r.x1-r.x0)+(r.y1-r.y0)+4));if(raw.length<4)return null;
+    const P=simplifyLoop(raw,0.6*S).map(([x,y])=>[+(x/S).toFixed(2),+(y/S).toFixed(2)]);return P.length>=3?P:null;};
   const views=[];
   for(const i of inks){if(parent[i]!==-1)continue;const r=reg[i];const A=FA(i);if(A<(20*S)**2)continue;
     const holes=[],windows=[];
     for(const k of (kids[i]||[])){const R=reg[k];const a=FA(k);if(a<(1.5*S)**2)continue;const bw=R.x1-R.x0+1,bh=R.y1-R.y0+1;const fill=a/(bw*bh);
       const round=Math.abs(bw-bh)/Math.max(bw,bh)<0.15&&fill>0.7&&fill<0.86;
-      const o={bbox:[R.x0/S,R.y0/S,bw/S,bh/S],area_pt2:a/S/S};(round||a<=0.01*A?holes:windows).push(o);}
+      const o={bbox:[R.x0/S,R.y0/S,bw/S,bh/S],area_pt2:a/S/S,poly:loopPoly(k)};(round||a<=0.01*A?holes:windows).push(o);}
     const bb=[r.x0/S,r.y0/S,(r.x1-r.x0)/S,(r.y1-r.y0)/S];
     let tl=0,nl=0;for(const [a,b] of segs){const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;if(mx<bb[0]||my<bb[1]||mx>bb[0]+bb[2]||my>bb[1]+bb[3])continue;const L=Math.hypot(b[0]-a[0],b[1]-a[1]);const an=Math.abs(Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI)%90;tl+=L;if(an>5&&an<85&&L>2)nl+=L;}
-    views.push({bbox:bb,outline:{bbox:bb,area_pt2:A/S/S},holes,windows,non_ortho:tl?+(nl/tl).toFixed(2):0,iso:tl>0&&nl/tl>0.35});}
+    views.push({bbox:bb,outline:{bbox:bb,area_pt2:A/S/S,poly:loopPoly(i)},holes,windows,non_ortho:tl?+(nl/tl).toFixed(2):0,iso:tl>0&&nl/tl>0.35});}
   return views;
 }
 
+// skala + grubość z tekstu PDF (port sheet_flat_pdf_v3.py). Zwraca {mmPerPt, scaleSrc, thicknessMm, thkConf, thkSrc}
+const NUM=/^\d+([.,]\d+)?$/;const num=t=>parseFloat(String(t).replace(',','.'));
+const polyArea=p=>{let s=0;for(let i=0;i<p.length;i++){const [a,b]=p[i],[c,d]=p[(i+1)%p.length];s+=a*d-c*b;}return Math.abs(s/2);};
+function textMeta(P,view){
+  const T=P.text||[];const out={mmPerPt:25.4/72,scaleSrc:'PDF pt 1:1 (brak pary wymiarów) - NIEPEWNE',thicknessMm:4,thkConf:'NIEPEWNE',thkSrc:'brak danych - domyślne 4 mm'};
+  if(!view)return out;const nums=[...new Set(T.filter(t=>NUM.test(t.s)).map(t=>num(t.s)))].sort((a,b)=>b-a);
+  const bw=view.bbox[2],bh=view.bbox[3],bL=Math.max(bw,bh),bW=Math.min(bw,bh);let best=null;
+  for(const a of nums)for(const b of nums){if(b>=a||b<5)continue;if(Math.abs((a/b)/(bL/bW)-1)<0.05){const sc=a/bL;if(!best||a>best[0])best=[a,b,sc];}}
+  if(best){out.mmPerPt=best[2];out.scaleSrc='wymiary '+best[0]+' x '+best[1]+' (x'+best[2].toFixed(3)+' mm/pt)';}
+  const H=P.H;const tbY=Math.min(...T.filter(t=>/^(Weight|Material|Gewicht|Masse)$/.test(t.s)).map(t=>t.y),H);
+  const txt=T.map(t=>t.s).join(' ');const m=txt.match(/(?:Dicke|t\s*=|thk|thickness|grubo\w*)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i);const expl=m?num(m[1]):null;
+  const cands=[...new Set(T.filter(t=>NUM.test(t.s)&&t.y<tbY-2&&t.y>0.06*H&&t.y<0.94*H).map(t=>[num(t.s),t]).filter(([v,t])=>v>=1&&v<=20&&!(v===Math.floor(v)&&t.s.length===1&&t.w<3)).map(([v])=>v))].sort((a,b)=>a-b);
+  let mass=null;for(let i=0;i<T.length;i++)if(T[i].s==='Weight'||T[i].s==='Gewicht'){for(const t2 of T.slice(i+1,i+6))if(NUM.test(t2.s)){mass=num(t2.s);break;}break;}
+  const low=txt.toLowerCase();const dens=/steel|stahl|s235|s355/.test(low)?7.85:/alu/.test(low)?2.7:/plastic|kunststoff/.test(low)?1.2:null;
+  const k=out.mmPerPt;let A=view.outline.poly?polyArea(view.outline.poly):bw*bh;for(const o of [...view.windows,...view.holes])A-=o.poly?polyArea(o.poly):o.area_pt2;A*=k*k;
+  const tm=mass&&dens&&A>0?mass*1e6/(dens*A):null;const GA=[1,1.5,2,2.5,3,4,5,6,8,10,12,15,20];
+  if(expl){out.thicknessMm=expl;out.thkConf='WYSOKA';out.thkSrc='jawne Dicke/t=';}
+  else if(cands.length&&tm){const t=cands.reduce((b,c)=>Math.abs(c/tm-1)<Math.abs(b/tm-1)?c:b);const e=Math.abs(t/tm-1);out.thicknessMm=t;out.thkConf=e<0.25?'WYSOKA':e<0.6?'SREDNIA':'NISKA (NIEPEWNE)';out.thkSrc='wymiar '+t+' z ['+cands+']; masa->'+tm.toFixed(2)+' mm';}
+  else if(cands.length&&cands[0]<=6){out.thicknessMm=cands[0];out.thkConf='NISKA (NIEPEWNE)';out.thkSrc='najmniejszy wymiar (brak masy)';}
+  else if(tm&&tm>=0.8&&tm<=25){out.thicknessMm=GA.reduce((b,g)=>Math.abs(g-tm)<Math.abs(b-tm)?g:b);out.thkConf='NISKA (NIEPEWNE)';out.thkSrc='tylko z masy '+tm.toFixed(2)+' mm';}
+  return out;}
 async function pdfVector(data,opts={}){
   const on=opts.pdfVec===true||(typeof window!=='undefined'&&window.__pdfVec===true);
   if(!on)return null;
   const pdfjs=opts.pdfjs||await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.min.mjs');
   const P=await extractStrokes(pdfjs,data);const C=classify(P);const views=loops(P.W,P.H,C.geo);
   const main=views.filter(v=>!v.iso);
-  return {views,geo_width:C.gw,width_lengths:C.tot,fallback:C.fallback,title_block:C.TB,
+  const mv=main.filter(v=>v.windows.length+v.holes.length>0).sort((a,b)=>(b.windows.length+b.holes.length)-(a.windows.length+a.holes.length)||b.outline.area_pt2-a.outline.area_pt2)[0]||main[0];
+  return {meta:textMeta(P,mv),views,geo_width:C.gw,width_lengths:C.tot,fallback:C.fallback,title_block:C.TB,
     windows_total:main.reduce((t,v)=>t+v.windows.length,0),holes_total:main.reduce((t,v)=>t+v.holes.length,0)};
 }
 if(typeof window!=='undefined'){if(window.__pdfVec===undefined)window.__pdfVec=false;window.pdfVector=pdfVector;}
-export {pdfVector,extractStrokes,classify,loops};
+export {pdfVector,extractStrokes,classify,loops,textMeta};
