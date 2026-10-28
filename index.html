@@ -1806,12 +1806,12 @@ function openAR(withTable){exportGLB(function(blob,w){var u=URL.createObjectURL(
  var mv=!!customElements.get('model-viewer'),qlook=document.createElement('a').relList.supports('ar');
  ov.innerHTML='<div class="arbar"><button id="arx">‹</button><span class="pill">✦ Namierz powierzchnię</span><span class="pill">📏 Skala: 1:1</span></div>'+
  (mv?'<model-viewer id="mv" src="'+u+'" '+(IOS?'':'ar ar-modes="webxr scene-viewer" ')+'ar-scale="fixed" camera-controls auto-rotate shadow-intensity="1" style="width:100%;height:52vh;background:#05070c;border-radius:16px">'+(IOS?'':'<button slot="ar-button" class="main orange">◎ Zobacz w AR</button>')+'</model-viewer>':'<p class="warn">Podgląd 3D niedostępny (otwórz wersję z serwera/strony).</p>')+
- '<label class="arTbl"><input type="checkbox" id="arT"'+(withTable?' checked':'')+'> z stołem</label>'+
+ 
  (IOS?'<a id="arQL" rel="ar" class="main orange arBtn" href="#"><img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="" width="1" height="1">◎ Zobacz w AR <small id="arSt">(przygotowuję…)</small></a>':'')+
  (!IOS&&!mv?'':'')+'<button class="main alt" id="du">⬇ Pobierz USDZ (iPhone – Pliki → Quick Look)</button><button class="main alt" id="dg">⬇ Pobierz GLB (Android, Windows)</button>'+
  '<p class="hint small">iPhone: Safari → „Zobacz w AR” otwiera Quick Look (model w metrach, 1:1, bez skalowania palcami). Gdy nie zadziała: „Pobierz USDZ” → otwórz plik z aplikacji Pliki. Android: Chrome → „Zobacz w AR” (WebXR; Scene Viewer nie przyjmuje modelu z pamięci strony – wtedy „Pobierz GLB”). '+(qlook?'':'Ta przeglądarka nie obsługuje Quick Look.')+'</p>';
  document.body.appendChild(ov);document.getElementById('arx').onclick=function(){ov.remove();};document.getElementById('dg').onclick=function(){dl(blob,'rama_model.glb');};
- document.getElementById('arT').onchange=function(){openAR(this.checked);};
+ var _aT=document.getElementById('arT');if(_aT)_aT.onchange=function(){openAR(this.checked);};
  var usdz=exportUSDZ(w);window.__usdzReady=usdz;
  usdz.then(function(ub){var q=document.getElementById('arQL');var uu=URL.createObjectURL(ub);if(q){q.href=uu+'#allowsContentScaling=0';document.getElementById('arSt').textContent='';}
   var m=document.getElementById('mv');if(m&&!IOS)m.setAttribute('ios-src',uu);}).catch(function(e){var st=document.getElementById('arSt');if(st)st.textContent='(błąd USDZ: '+e+')';});
@@ -2820,6 +2820,15 @@ init();</script><script>(function(){var sp=document.getElementById('splash');if(
 ["pudełko z rozwinięcia","box from flat pattern","Kasten aus Abwicklung"],
 ["\\(kształt rzutów; proporcje zmienione wpisanymi wymiarami\\)","(view shapes; proportions changed by entered dimensions)","(Ansichtsform; Proportionen durch eingegebene Maße geändert)"],
 ["wybrane ręcznie","chosen manually","manuell gewählt"]
+/* oria-133: How/budowa EN/DE */
+["wyciągnięcie przodu na głębokość ","front extruded to depth ","Vorderansicht extrudiert auf Tiefe "],
+["wyciągnięcie boku na ","side extruded by ","Seitenansicht extrudiert um "],["wyciągnięcie góry na ","top extruded by ","Draufsicht extrudiert um "],["wyciągnięcie przodu na ","front extruded by ","Vorderansicht extrudiert um "],
+["wyciągnięcie profilu gięcia \\(","bend profile extruded (","Biegeprofil extrudiert ("],
+["wyciągnięcie boku","side extrusion","Seitenextrusion"],["wyciągnięcie góry","top extrusion","Draufsicht-Extrusion"],["wyciągnięcie przodu","front extrusion","Vorderansicht-Extrusion"],
+["przecięcie rzutów","intersection of views","Schnitt der Ansichten"],["płyta z obrysu, grubość ","plate from outline, thickness ","Platte aus Kontur, Dicke "],
+["brak rzutów – płyta z obrysu widoku 3D \\(zgrubnie\\)","no views – plate from 3D view outline (rough)","keine Ansichten – Platte aus 3D-Ansicht-Kontur (grob)"],
+["obrót górnej połowy obrysu przodu wokół osi \\(48 segmentów\\)","upper half of front outline revolved about axis (48 segments)","obere Hälfte der Vorderkontur um Achse gedreht (48 Segmente)"],
+["kontury ścian z rzutów: ","wall outlines from views: ","Wandkonturen aus Ansichten: "],
 ].forEach(function(r){RU.push([new RegExp(r[0],'g'),r[1],r[2]]);});
 var OR=new WeakMap(),busy=false;function tr(t){if(L=='pl')return t;var k=t.trim();if(!k)return t;var d=DIC[k];if(d)return t.replace(k,d[L]);var o=k,i=L=='en'?1:2;RU.forEach(function(r){o=o.replace(r[0],r[i]);});return o==k?t:t.replace(k,o);}
 function node(n){if(n.nodeType==3){if(n.parentNode&&/^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode.nodeName))return;var o=OR.has(n)?OR.get(n):n.nodeValue;var v=tr(o);if(v!=n.nodeValue){OR.set(n,o);n.nodeValue=v;}else if(L=='pl'&&OR.has(n)){var ov=OR.get(n);OR.delete(n);if(n.nodeValue!==ov)n.nodeValue=ov;}return;}
@@ -3261,7 +3270,7 @@ var TX={
   eNoOpen:'Aparat AR się nie otworzył. Pobierz plik AR poniżej i otwórz go ręcznie.',
   eDesk:'AR działa na telefonie (iPhone: Safari, Android: Chrome). Na komputerze możesz pobrać plik AR.',
   eExp:'Nie udało się przygotować pliku AR: ',eMV:'Brak komponentu podglądu AR (model-viewer).',
-  noLbl:'Uwaga: etykiety wymiarów w .usdz są płaskimi obrazkami.',back:'‹',histBk:'Historia projektów',close:'Zamknij',tbl:'ze stołem'},
+  noLbl:'Uwaga: etykiety wymiarów w .usdz są płaskimi obrazkami.',back:'‹',histBk:'Historia projektów',close:'Zamknij',tbl:''},
  en:{title:'AR 1:1',prep:'Preparing AR model…',go:'◎ View in AR',dlU:'⬇ Download AR file (.usdz)',dlG:'⬇ Download AR file (.glb)',
   ready:'Model ready. Tap “View in AR” to open the camera.',launching:'Starting AR camera…',
   eHttps:'AR requires HTTPS. Open the app from an https:// address (or localhost) and try again.',
@@ -3271,7 +3280,7 @@ var TX={
   eNoOpen:'The AR camera did not open. Download the AR file below and open it manually.',
   eDesk:'AR works on a phone (iPhone: Safari, Android: Chrome). On a computer you can download the AR file.',
   eExp:'Could not prepare the AR file: ',eMV:'AR viewer component (model-viewer) missing.',
-  noLbl:'Note: dimension labels in .usdz are flat images.',back:'‹',histBk:'Project history',close:'Close',tbl:'with table'},
+  noLbl:'Note: dimension labels in .usdz are flat images.',back:'‹',histBk:'Project history',close:'Close',tbl:''},
  de:{title:'AR 1:1',prep:'AR-Modell wird vorbereitet…',go:'◎ In AR ansehen',dlU:'⬇ AR-Datei laden (.usdz)',dlG:'⬇ AR-Datei laden (.glb)',
   ready:'Modell bereit. Tippe auf „In AR ansehen“, um die Kamera zu öffnen.',launching:'AR-Kamera wird gestartet…',
   eHttps:'AR erfordert HTTPS. Öffne die App über eine https://-Adresse (oder localhost) und versuche es erneut.',
@@ -3281,7 +3290,7 @@ var TX={
   eNoOpen:'Die AR-Kamera hat sich nicht geöffnet. Lade die AR-Datei unten und öffne sie manuell.',
   eDesk:'AR funktioniert auf dem Telefon (iPhone: Safari, Android: Chrome). Am Computer kannst du die AR-Datei laden.',
   eExp:'AR-Datei konnte nicht erstellt werden: ',eMV:'AR-Viewer-Komponente (model-viewer) fehlt.',
-  noLbl:'Hinweis: Maßbeschriftungen in .usdz sind flache Bilder.',back:'‹',histBk:'Projektverlauf',close:'Schließen',tbl:'mit Tisch'}};
+  noLbl:'Hinweis: Maßbeschriftungen in .usdz sind flache Bilder.',back:'‹',histBk:'Projektverlauf',close:'Schließen',tbl:''}};
 if(window.AR_I18N)['pl','en','de'].forEach(function(l){for(var k in AR_I18N[l])if(!(k in TX[l]))TX[l][k]=AR_I18N[l][k]});/* v90b */
 function T(k){var d=TX[L()]||TX.pl;return d[k]||TX.pl[k]}window.__arT=T;
 var ua=navigator.userAgent;
@@ -3319,10 +3328,10 @@ addEventListener('pageshow',function(e){if(e.persisted&&document.getElementById(
 function overlay(withTable){var ov=document.getElementById('ar');if(ov)arClose(false);window.__arSeq++;ov=document.createElement('div');ov.id='ar';
  ov.innerHTML='<div class="arbar"><button id="arx" aria-label="'+T('close')+'">‹</button><span class="pill">📏 '+T('title')+'</span><button id="arHist" type="button" title="'+T('histBk')+'" aria-label="'+T('histBk')+'">← '+T('histBk')+'</button></div>'+
  '<div id="mvw"></div><div class="m11st" role="status">'+T('prep')+'</div><div id="m11act"></div>'+
- '<label class="arTbl"><input type="checkbox" id="arT"'+(withTable?' checked':'')+'> '+T('tbl')+'</label>'+
+ 
  '<div class="m11dl"><button class="main alt" id="du">'+T('dlU')+'</button><button class="main alt" id="dg">'+T('dlG')+'</button></div>'+
  '<p class="m11env">'+[ENV.ios?'iOS':ENV.android?'Android':'desktop',ENV.https?'HTTPS':'HTTP',ENV.standalone?'PWA':'browser','QL:'+(ENV.qlook?'tak':'nie'),'WebXR:'+(ENV.webxr?'tak':'nie'),'SW:'+(ENV.sw?'tak':'nie')].join(' · ')+'</p>';
- document.body.appendChild(ov);ov.querySelector('#arx').onclick=function(){arClose(false)};ov.querySelector('#arHist').onclick=function(){arClose(true)};ov.__seq=window.__arSeq;ov.querySelector('#arT').onchange=function(){openAR(this.checked)};return ov}
+ document.body.appendChild(ov);ov.querySelector('#arx').onclick=function(){arClose(false)};ov.querySelector('#arHist').onclick=function(){arClose(true)};ov.__seq=window.__arSeq;return ov}
 function M11open(withTable){
  /* oria-127: nowe≠demo – brak siatki = czytelny błąd; status eksportu */
  try{var _demoAR={"p1792730002810_617008":1,"p1792730062141_429423":1,"p1792730092210_994554":1,"p1792730343735_882047":1,"p1792730088013_521978":1,"p1792730277882_175983":1,"p1792731129150_336551":1};var _nM=0;if(window.R3&&R3.grp)R3.grp.traverse(function(o){if(o.isMesh)_nM++});if(!_nM&&!(_demoAR[window.__histId]&&document.getElementById('hname'))){var msg=({en:'No 3D model for AR. Open the project again from History.',de:'Kein 3D-Modell für AR. Erneut aus dem Verlauf öffnen.'}[L()]||'Brak modelu 3D do AR. Otwórz projekt ponownie z Historii.');try{alert(msg)}catch(e){}return}}catch(e){}
@@ -3576,7 +3585,7 @@ html.m15ios #mnav{opacity:.28;filter:saturate(.3);transition:opacity .3s}
 #patchip{position:static!important;display:inline-flex!important;align-items:center;gap:6px;background:#151a25!important;color:#b8c4d0!important;border:1px solid rgba(184,196,208,.45)!important;border-radius:6px!important;padding:2px 8px!important;font:600 11px system-ui,sans-serif!important;margin-right:14px}
 #patchip::before{content:"";flex:0 0 5px;width:5px;height:5px;border-radius:50%;background:#22d3ee}
 
-#ar .arTbl{display:flex!important;align-items:center;gap:12px;min-height:44px;margin:8px 2px;cursor:pointer;text-align:left}
+#ar .arTbl{display:none!important;align-items:center;gap:12px;min-height:44px;margin:8px 2px;cursor:pointer;text-align:left}
 #ar .arTbl input{width:22px;height:22px;min-height:0;margin:0;flex:none;accent-color:#22d3ee}
 #ar .m11tab{display:inline-flex!important;align-items:center;min-height:44px;padding:0 4px;margin:0 0 4px!important}
 #ar .m11env{padding-bottom:calc(10px + env(safe-area-inset-bottom))}
