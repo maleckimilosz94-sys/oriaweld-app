@@ -48,6 +48,7 @@ export function registerSheetG0(win=globalThis){
     if(!v) return null; const d=buildSheetG0({outline:v.outlinePolygon,holes:v.holes,thicknessMm:m.thicknessMm,widthMm:o.widthMm});
     return {id:'sheetG0',label:'blacha z obrysu',geom:d.geometry,score:0.9,why:['G0: '+d.holes.length+' otwory']}; };
   win.PdfVecToG0=r=>pdfVecToG0View(r);
+  win.PdfVecToBent=(r,o)=>pdfVecToBent(r,o);
 }
 // PdfVec -> G0: widok wektorowy (bbox w pt, Y w dół) -> {outlinePolygon, holes} dla SheetG0Cand.
 // Okna = prostokąty z bbox, otwory okrągłe = 16-kąty. Wybiera widok nie-iso z największą liczbą okien+otworów.
@@ -64,4 +65,36 @@ export function pdfVecToG0View(res){
   const outline=ok(v.outline&&v.outline.poly)?v.outline.poly:rectP(v.bbox);const M=res.meta||null;
   return {outlinePolygon:outline,holes,widthPt:v.bbox[2],src:'pdfVec',nWin:v.windows.length,nHole:v.holes.length,outlineVerts:outline.length,loops:ok(v.outline&&v.outline.poly),
     widthMm:M?v.bbox[2]*M.mmPerPt:null,thicknessMm:M?M.thicknessMm:null,meta:M};
+}
+// --- Gięcia z rzutu bocznego (pdf_vector side_bends) -> półki. Źródło półek = profil; liczby wymiarów tylko jako kontrola ±tol mm.
+// opts.bends===false -> null (ścieżka OFF jak dotąd).
+export function resolveShelves(sb, dimNums=[], opts={}){
+  if(opts.bends===false||!sb||!(sb.bends>0)||!Array.isArray(sb.legs_mm)) return null;
+  const tol=opts.tol??1, t=sb.t_gauge||sb.t_mm||4;
+  const shelves=sb.legs_mm.map((L,i)=>{const Li=(sb.legs_in_mm||[])[i];
+    let best=null;for(const d of dimNums){for(const [ref,kind] of [[L,'zewn'],[Li,'wewn']]){if(ref==null)continue;const e=Math.abs(d-ref);if(!best||e<best.err)best={dim:d,kind,err:+e.toFixed(2)};}}
+    return {leg_mm:L,leg_in_mm:Li??null,src:'profil',check:!best?'BRAK_LICZBY':best.err<=tol?'OK':best.err<=Math.max(3,0.1*L)?'ROZBIEZNE':'BRAK_LICZBY',dim:best?best.dim:null,dimKind:best?best.kind:null,err:best?best.err:null};});
+  return {type:sb.type,bends:sb.bends,t_mm:t,shelves,allOk:shelves.every(s=>s.check==='OK'),anyBad:shelves.some(s=>s.check==='ROZBIEZNE')};
+}
+// Przekrój L/U (linia środkowa -> pas grubości t) w mm, płaszczyzna (u,v); półki zewn. jak w legs_mm.
+export function bentSection(sh){
+  const t=sh.t_mm,L=sh.shelves.map(s=>s.leg_mm);
+  if(sh.type==='L'){const [a,b]=L;return [[0,0],[a,0],[a,t],[t,t],[t,b],[0,b]];}
+  if(sh.type==='U'){const [a,w,c]=L;return [[0,a],[0,0],[w,0],[w,c],[w-t,c],[w-t,t],[t,t],[t,a]];}
+  return null;
+}
+// Bryła giętej blachy: przekrój wyciągnięty na długość lengthMm. Bez THREE -> deskryptor.
+export function buildBentSheet(sh,lengthMm,opts={}){
+  const sec=bentSection(sh);if(!sec||!(lengthMm>0))return null;
+  const desc={kind:'bent',type:sh.type,section:sec,length:lengthMm,t:sh.t_mm,bends:sh.bends,shelves:sh.shelves,anyBad:sh.anyBad};
+  const THREE=opts.THREE||(typeof globalThis!=='undefined'&&globalThis.THREE);
+  if(THREE){desc.geometry=new THREE.ExtrudeGeometry(new THREE.Shape(sec.map(([x,y])=>new THREE.Vector2(x,y))),{depth:lengthMm,bevelEnabled:false});}
+  return desc;
+}
+// Z wyniku pdfVector: półki + długość (największy wymiar innego widoku nie-iso; NIEPEWNE).
+export function pdfVecToBent(res,opts={}){
+  if(!res||opts.bends===false)return null;const sh=resolveShelves(res.side_bends,res.dim_nums||[],opts);if(!sh)return null;
+  const k=res.meta?res.meta.mmPerPt:25.4/72;const others=(res.views||[]).filter(v=>!v.iso&&!(v.profile&&v.profile.bends>0));
+  const len=opts.lengthMm||Math.max(0,...others.map(v=>Math.max(v.outline.bbox[2],v.outline.bbox[3])*k));
+  return buildBentSheet(sh,+len.toFixed(1),opts);
 }

@@ -143,6 +143,8 @@ function textMeta(P,view){
   const bw=view.bbox[2],bh=view.bbox[3],bL=Math.max(bw,bh),bW=Math.min(bw,bh);let best=null;
   for(const a of nums)for(const b of nums){if(b>=a||b<5)continue;if(Math.abs((a/b)/(bL/bW)-1)<0.05){const sc=a/bL;if(!best||a>best[0])best=[a,b,sc];}}
   if(best){out.mmPerPt=best[2];out.scaleSrc='wymiary '+best[0]+' x '+best[1]+' (x'+best[2].toFixed(3)+' mm/pt)';}
+  else{const sc=T.map(t=>/^(\d+(?:[.,]\d+)?)\s*:\s*(\d+(?:[.,]\d+)?)$/.exec(t.s.trim().split(/\s+/).pop())).find(m=>m&&num(m[1])>0&&num(m[2])>0);
+    if(sc&&num(sc[1])/num(sc[2])!==1){out.mmPerPt=25.4/72*num(sc[2])/num(sc[1]);out.scaleSrc='skala z tabliczki '+sc[1]+':'+sc[2]+' (SREDNIA)';}}
   const H=P.H;const tbY=Math.min(...T.filter(t=>/^(Weight|Material|Gewicht|Masse)$/.test(t.s)).map(t=>t.y),H);
   const txt=T.map(t=>t.s).join(' ');const m=txt.match(/(?:Dicke|t\s*=|thk|thickness|grubo\w*)\s*[:=]?\s*(\d+(?:[.,]\d+)?)/i);const expl=m?num(m[1]):null;
   const cands=[...new Set(T.filter(t=>NUM.test(t.s)&&t.y<tbY-2&&t.y>0.06*H&&t.y<0.94*H).map(t=>[num(t.s),t]).filter(([v,t])=>v>=1&&v<=20&&!(v===Math.floor(v)&&t.s.length===1&&t.w<3)).map(([v])=>v))].sort((a,b)=>a-b);
@@ -155,6 +157,21 @@ function textMeta(P,view){
   else if(cands.length&&cands[0]<=6){out.thicknessMm=cands[0];out.thkConf='NISKA (NIEPEWNE)';out.thkSrc='najmniejszy wymiar (brak masy)';}
   else if(tm&&tm>=0.8&&tm<=25){out.thicknessMm=GA.reduce((b,g)=>Math.abs(g-tm)<Math.abs(b-tm)?g:b);out.thkConf='NISKA (NIEPEWNE)';out.thkSrc='tylko z masy '+tm.toFixed(2)+' mm';}
   return out;}
+// Profil z rzutu bocznego (L/U): ścianki = krawędzie bbox zajęte pasem grubości t. t ≈ 2A/obwód (cienka ścianka).
+const inPoly=(P,x,y)=>{let c=false;for(let i=0,j=P.length-1;i<P.length;j=i++){const [xi,yi]=P[i],[xj,yj]=P[j];if((yi>y)!==(yj>y)&&x<(xj-xi)*(y-yi)/(yj-yi)+xi)c=!c;}return c;};
+function sideProfile(v,k){const P=v.outline&&v.outline.poly;if(!P||P.length<4||v.iso||v.holes.length||v.windows.length)return null;
+  const [x0,y0,bw,bh]=v.outline.bbox;let per=0;for(let i=0;i<P.length;i++){const a=P[i],b=P[(i+1)%P.length];per+=Math.hypot(b[0]-a[0],b[1]-a[1]);}
+  const A=polyArea(P);const t=2*A/per;const m=Math.min(bw,bh);if(!(t>0)||m<1)return null;
+  if(m<2.5*t&&m<0.2*Math.max(bw,bh))return {type:'plaski',t_mm:+(m*k).toFixed(2),legs_mm:[+(Math.max(bw,bh)*k).toFixed(1)],bends:0};
+  if(t>0.35*m||A>0.7*bw*bh)return null;
+  const d=t/2,N=40;const occ=(ax,ay,bx,by)=>{let n=0;for(let i=1;i<N;i++){const u=i/N;if(inPoly(P,ax+(bx-ax)*u,ay+(by-ay)*u))n++;}return n/(N-1);};
+  const E={T:occ(x0,y0+d,x0+bw,y0+d),R:occ(x0+bw-d,y0,x0+bw-d,y0+bh),B:occ(x0,y0+bh-d,x0+bw,y0+bh-d),L:occ(x0+d,y0,x0+d,y0+bh)};
+  const ord=['T','R','B','L'];const on=ord.filter(e=>E[e]>0.85);const len=e=>(e==='T'||e==='B'?bw:bh)*k;
+  let seq=null;if(on.length===2){const i=ord.indexOf(on[0]),j=ord.indexOf(on[1]);if((j-i)%2===1)seq=(j-i===3)?[on[1],on[0]]:on;}
+  else if(on.length===3){const miss=ord.find(e=>!on.includes(e));const i=ord.indexOf(miss);seq=[ord[(i+1)%4],ord[(i+2)%4],ord[(i+3)%4]];}
+  if(!seq)return null;const tm=t*k;
+  const G=[1,1.5,2,2.5,3,4,5,6,8,10,12,15,20],tg=G.reduce((b,g)=>Math.abs(g-tm)<Math.abs(b-tm)?g:b);
+  return {type:seq.length===2?'L':'U',t_mm:+tm.toFixed(2),t_gauge:tg,legs_mm:seq.map(e=>+len(e).toFixed(1)),legs_in_mm:seq.map((e,i)=>+(len(e)-tm*((i>0)+(i<seq.length-1))).toFixed(1)),bends:seq.length-1,occ:E,src:'rzut boczny wektor (centerline)'};}
 async function pdfVector(data,opts={}){
   const on=opts.pdfVec===true||(typeof window!=='undefined'&&window.__pdfVec===true);
   if(!on)return null;
@@ -162,7 +179,10 @@ async function pdfVector(data,opts={}){
   const P=await extractStrokes(pdfjs,data);const C=classify(P);const views=loops(P.W,P.H,C.geo,opts.centerline!==false);
   const main=views.filter(v=>!v.iso);
   const mv=main.filter(v=>v.windows.length+v.holes.length>0).sort((a,b)=>(b.windows.length+b.holes.length)-(a.windows.length+a.holes.length)||b.outline.area_pt2-a.outline.area_pt2)[0]||main[0];
-  return {meta:textMeta(P,mv),views,geo_width:C.gw,width_lengths:C.tot,fallback:C.fallback,title_block:C.TB,
+  const meta=textMeta(P,mv);if(opts.bends!==false)for(const v of views){const sp=sideProfile(v,meta.mmPerPt);if(sp)v.profile=sp;}
+  const prof=views.map(v=>v.profile).filter(p=>p&&p.bends>0).sort((a,b)=>b.bends-a.bends)[0]||null;
+  return {meta,side_bends:prof,views,geo_width:C.gw,width_lengths:C.tot,fallback:C.fallback,title_block:C.TB,
+    dim_nums:[...new Set((P.text||[]).filter(t=>NUM.test(t.s)).map(t=>num(t.s)))].filter(x=>x>0).sort((a,b)=>a-b),
     windows_total:main.reduce((t,v)=>t+v.windows.length,0),holes_total:main.reduce((t,v)=>t+v.holes.length,0)};
 }
 if(typeof window!=='undefined'){if(window.__pdfVec===undefined)window.__pdfVec=false;window.pdfVector=pdfVector;}
