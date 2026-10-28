@@ -3207,6 +3207,8 @@ window.__rfx={open:form,adapter:refineAdapter};
 #ar .m11go{display:block;text-align:center;text-decoration:none;font-size:17px;padding:16px;margin:10px 0}
 #ar .m11env{font-size:11px;opacity:.65;margin-top:6px}
 #ar .m11dl{display:flex;gap:8px;flex-wrap:wrap}#ar .m11dl button{flex:1 1 140px}
+#ar{padding-top:calc(14px + env(safe-area-inset-top))!important}#ar .arbar{position:sticky;top:0;z-index:2}
+#ar #arx{min-width:48px;min-height:48px}#ar #arHist{font:600 13px system-ui,sans-serif!important;min-height:44px;padding:10px 14px;border:1px solid rgba(34,211,238,.45)!important;border-radius:10px;background:rgba(16,20,29,.9)!important;color:#e6ebf2!important}
 </style>
 <script id="m11js">(function(){
 /* ===== M11: AR jednym dotknięciem (iOS najpierw, potem Android/WebXR). Tylko warstwa UI/AR – silnik nietknięty. ===== */
@@ -3222,7 +3224,7 @@ var TX={
   eNoOpen:'Aparat AR się nie otworzył. Pobierz plik AR poniżej i otwórz go ręcznie.',
   eDesk:'AR działa na telefonie (iPhone: Safari, Android: Chrome). Na komputerze możesz pobrać plik AR.',
   eExp:'Nie udało się przygotować pliku AR: ',eMV:'Brak komponentu podglądu AR (model-viewer).',
-  noLbl:'Uwaga: etykiety wymiarów w .usdz są płaskimi obrazkami.',back:'‹',tbl:'ze stołem'},
+  noLbl:'Uwaga: etykiety wymiarów w .usdz są płaskimi obrazkami.',back:'‹',histBk:'Historia projektów',tbl:'ze stołem'},
  en:{title:'AR 1:1',prep:'Preparing AR model…',go:'◎ View in AR',dlU:'⬇ Download AR file (.usdz)',dlG:'⬇ Download AR file (.glb)',
   ready:'Model ready. Tap “View in AR” to open the camera.',launching:'Starting AR camera…',
   eHttps:'AR requires HTTPS. Open the app from an https:// address (or localhost) and try again.',
@@ -3232,7 +3234,7 @@ var TX={
   eNoOpen:'The AR camera did not open. Download the AR file below and open it manually.',
   eDesk:'AR works on a phone (iPhone: Safari, Android: Chrome). On a computer you can download the AR file.',
   eExp:'Could not prepare the AR file: ',eMV:'AR viewer component (model-viewer) missing.',
-  noLbl:'Note: dimension labels in .usdz are flat images.',back:'‹',tbl:'with table'},
+  noLbl:'Note: dimension labels in .usdz are flat images.',back:'‹',histBk:'Project history',tbl:'with table'},
  de:{title:'AR 1:1',prep:'AR-Modell wird vorbereitet…',go:'◎ In AR ansehen',dlU:'⬇ AR-Datei laden (.usdz)',dlG:'⬇ AR-Datei laden (.glb)',
   ready:'Modell bereit. Tippe auf „In AR ansehen“, um die Kamera zu öffnen.',launching:'AR-Kamera wird gestartet…',
   eHttps:'AR erfordert HTTPS. Öffne die App über eine https://-Adresse (oder localhost) und versuche es erneut.',
@@ -3242,7 +3244,7 @@ var TX={
   eNoOpen:'Die AR-Kamera hat sich nicht geöffnet. Lade die AR-Datei unten und öffne sie manuell.',
   eDesk:'AR funktioniert auf dem Telefon (iPhone: Safari, Android: Chrome). Am Computer kannst du die AR-Datei laden.',
   eExp:'AR-Datei konnte nicht erstellt werden: ',eMV:'AR-Viewer-Komponente (model-viewer) fehlt.',
-  noLbl:'Hinweis: Maßbeschriftungen in .usdz sind flache Bilder.',back:'‹',tbl:'mit Tisch'}};
+  noLbl:'Hinweis: Maßbeschriftungen in .usdz sind flache Bilder.',back:'‹',histBk:'Projektverlauf',tbl:'mit Tisch'}};
 if(window.AR_I18N)['pl','en','de'].forEach(function(l){for(var k in AR_I18N[l])if(!(k in TX[l]))TX[l][k]=AR_I18N[l][k]});/* v90b */
 function T(k){var d=TX[L()]||TX.pl;return d[k]||TX.pl[k]}window.__arT=T;
 var ua=navigator.userAgent;
@@ -3258,7 +3260,8 @@ function style(){return window.__arStyle?__arStyle():'stal'}
 var CN='arfiles';
 function swCtl(){var sw=navigator.serviceWorker;if(!sw||!window.caches||!window.isSecureContext)return Promise.resolve(false);if(sw.controller)return Promise.resolve(true);
  return Promise.race([sw.ready.then(function(){return new Promise(function(r){if(sw.controller)return r(true);sw.addEventListener('controllerchange',function(){r(true)},{once:true})})}),new Promise(function(r){setTimeout(function(){r(!!sw.controller)},3000)})]).catch(function(){return false})}
-function sameOrigin(blob,name){var u=new URL('ar/'+name,location.href).href;var ty=/\.usdz$/.test(name)?'model/vnd.usdz+zip':'model/gltf-binary';
+window.__arQ=Promise.resolve();function sameOrigin(blob,name){var p=window.__arQ.then(function(){return sameOrigin0(blob,name)});window.__arQ=p.catch(function(){});return p}
+function sameOrigin0(blob,name){var u=new URL('ar/'+name,location.href).href;var ty=/\.usdz$/.test(name)?'model/vnd.usdz+zip':'model/gltf-binary';
  return swCtl().then(function(ok){if(!ok)return null;ENV.sw=true;return caches.open(CN).then(function(c){return c.delete(u).then(function(){return c.put(u,new Response(blob,{headers:{'Content-Type':ty,'Content-Length':String(blob.size)}}))})})
  .then(function(){return fetch(u,{cache:'no-store'})}).then(function(r){return r.ok&&(r.headers.get('Content-Type')||'').indexOf(ty)==0?u:null})}).catch(function(){return null})}
 function dataURL(blob){return new Promise(function(r,j){var f=new FileReader();f.onload=function(){r(f.result)};f.onerror=j;f.readAsDataURL(blob)})}
@@ -3271,32 +3274,37 @@ function st(ov,msg,err,title){var b=ov.querySelector('.m11st');b.className='m11s
 function safariURL(){var w=arGroup(false),mm=w.userData.mm||(function(){var s=new THREE.Box3().setFromObject(w).getSize(new THREE.Vector3());return [s.x,s.y,s.z].map(function(v){return Math.round(v*1000)})})();
  var h=__arPack(w,style(),mm);window.__arHashLen=h.length;var base=new URL('ar.html',location.href);return {x:'x-safari-'+base.href+'#'+h,plain:base.href+'#'+h,len:h.length}}
 window.__arSafariURL=safariURL;
-function overlay(withTable){var ov=document.getElementById('ar');if(ov)ov.remove();ov=document.createElement('div');ov.id='ar';
- ov.innerHTML='<div class="arbar"><button id="arx" aria-label="'+T('back')+'">‹</button><span class="pill">📏 '+T('title')+'</span></div>'+
+/* oria-122: remont AR – jedna aktywna sesja (token __arSeq), sprzątanie przy zamknięciu, wyjście do historii */
+window.__arSeq=window.__arSeq||0;function live(ov){return !!ov&&ov.__seq===window.__arSeq&&document.body.contains(ov)}
+function arClose(toHist){window.__arSeq++;var ov=document.getElementById('ar');if(ov){var mv=ov.querySelector('#mv');if(mv){try{mv.removeAttribute('src')}catch(e){}mv.remove()}(ov.__urls||[]).forEach(function(u){try{URL.revokeObjectURL(u)}catch(e){}});ov.remove()}window.__arLast=null;window.__usdzReady=null;
+ if(toHist&&window.HIST&&HIST.show){try{hist.push(cur)}catch(e){}HIST.show();try{scrollTo(0,0)}catch(e){}}}window.__arClose=arClose;
+addEventListener('pageshow',function(e){if(e.persisted&&document.getElementById('ar'))arClose(false)});
+function overlay(withTable){var ov=document.getElementById('ar');if(ov)arClose(false);window.__arSeq++;ov=document.createElement('div');ov.id='ar';
+ ov.innerHTML='<div class="arbar"><button id="arx" aria-label="'+T('histBk')+'">‹</button><span class="pill">📏 '+T('title')+'</span><button id="arHist" type="button">← '+T('histBk')+'</button></div>'+
  '<div id="mvw"></div><div class="m11st" role="status">'+T('prep')+'</div><div id="m11act"></div>'+
  '<label class="arTbl"><input type="checkbox" id="arT"'+(withTable?' checked':'')+'> '+T('tbl')+'</label>'+
  '<div class="m11dl"><button class="main alt" id="du">'+T('dlU')+'</button><button class="main alt" id="dg">'+T('dlG')+'</button></div>'+
  '<p class="m11env">'+[ENV.ios?'iOS':ENV.android?'Android':'desktop',ENV.https?'HTTPS':'HTTP',ENV.standalone?'PWA':'browser','QL:'+(ENV.qlook?'tak':'nie'),'WebXR:'+(ENV.webxr?'tak':'nie'),'SW:'+(ENV.sw?'tak':'nie')].join(' · ')+'</p>';
- document.body.appendChild(ov);if(!ENV.ios)ov.classList.add('arNoPlane');ov.querySelector('#arx').onclick=function(){ov.remove()};ov.querySelector('#arT').onchange=function(){openAR(this.checked)};return ov}
+ document.body.appendChild(ov);if(!ENV.ios)ov.classList.add('arNoPlane');ov.querySelector('#arx').onclick=function(){arClose(false)};ov.querySelector('#arHist').onclick=function(){arClose(true)};ov.__seq=window.__arSeq;ov.querySelector('#arT').onchange=function(){openAR(this.checked)};return ov}
 function M11open(withTable){
  /* v88b: na iOS bez AR w aplikacji – kopia działającej strony testowej ar/: demo → ar/dN.usdz, własny projekt → zapis ar/live.usdz do cache, potem przejście do ar/live.html */
  if(ENV.ios&&!withTable){var hid=({"p1792730002810_617008":"d1","p1792730062141_429423":"d2","p1792730092210_994554":"d3","p1792730343735_882047":"d4","p1792730088013_521978":"d5","p1792730277882_175983":"d6","p1792731129150_336551":"d7"})[window.__histId];if(hid&&document.getElementById('hname')){location.href='ar/live.html?f='+hid+'&v='+Date.now()+'&lang='+L();return}
   var ov0=overlay(false);st(ov0,'Przygotowuję model AR…');(function(){var h=document.createElement('div');h.className='arHold';h.id='arHold';h.innerHTML='<b>'+T('hold')+'</b><i></i><span>'+T('find')+'</span><small>'+T('m1')+'</small>';var m=ov0.querySelector('#mvw');if(m)m.appendChild(h)})();
-  __arGet(false,function(glb,w,usdzP){usdzP.then(function(ub){window.__arLast={glb:glb,usdz:ub};return sameOrigin(ub,'live.usdz')}).then(function(u){
-    if(u){location.href='ar/live.html?f=live&v='+Date.now()+'&lang='+L();return}
+  __arGet(false,function(glb,w,usdzP){if(!live(ov0))return;usdzP.then(function(ub){if(!live(ov0))throw 0;window.__arLast={glb:glb,usdz:ub};return sameOrigin(ub,'live.usdz')}).then(function(u){
+    if(!live(ov0))return;if(u){location.href='ar/live.html?f=live&v='+Date.now()+'&lang='+L();return}
     var act=ov0.querySelector('#m11act');var ok=false;try{ok=!!(navigator.canShare&&navigator.canShare({files:[new File([window.__arLast.usdz],'rama.usdz',{type:'model/vnd.usdz+zip'})]}))}catch(e){}
     st(ov0,'Brak pamięci podręcznej (service worker) – odśwież stronę albo udostępnij plik.',true);
     if(act&&ok){act.innerHTML='<button class="main orange m11go" id="arShare">⇪ Udostępnij plik .usdz</button>';act.querySelector('#arShare').onclick=function(){navigator.share({files:[new File([window.__arLast.usdz],'rama.usdz',{type:'model/vnd.usdz+zip'})]}).catch(function(){})}}
-   }).catch(function(e){st(ov0,T('eExp')+e,true)})});return}
+   }).catch(function(e){if(e!==0&&live(ov0))st(ov0,T('eExp')+e,true)})});return}
  /* v87: AR jako prosty moduł – plik .usdz pod prawdziwym adresem ar/live.usdz (SW, model/vnd.usdz+zip),
     link <a rel="ar"> z dokładnie jednym <img>, awaryjnie udostępnienie pliku (navigator.share). Bez łańcucha x-safari. */
  var ov=overlay(withTable);if(!ENV.https)st(ov,T('eHttps'),true);waitBtn(ov);
  var act=ov.querySelector('#m11act');if(act&&ENV.ios)act.innerHTML='<small>…</small>';
- __arGet(withTable,function(glb,w,usdzP){window.__arLast={glb:glb};arURL(glb,'live.glb').then(function(r){arm(ov,'dg',r,'rama_model.glb')});
+ __arGet(withTable,function(glb,w,usdzP){if(!live(ov))return;window.__arLast={glb:glb};arURL(glb,'live.glb').then(function(r){if(live(ov))arm(ov,'dg',r,'rama_model.glb')});
   var usdz=usdzP;window.__usdzReady=usdz;
   var usdzR=usdz.then(function(ub){window.__arLast.usdz=ub;return arURL(ub,'live.usdz')});
-  usdzR.then(function(r){arm(ov,'du',r,'rama_model.usdz')}).catch(function(e){st(ov,T('eExp')+e,true)});
-  if(ENV.ios){usdzR.then(function(r){window.__arLast.how=r.how;window.__arLast.url=r.url;
+  usdzR.then(function(r){if(live(ov))arm(ov,'du',r,'rama_model.usdz')}).catch(function(e){if(live(ov))st(ov,T('eExp')+e,true)});
+  if(ENV.ios){usdzR.then(function(r){if(!live(ov))return;window.__arLast.how=r.how;window.__arLast.url=r.url;
     /* v88: w aplikacji z ekranu głównego Quick Look w środku PWA zawiesza się – tylko udostępnienie pliku lub karta Safari */
     var abs=new URL(r.url,location.href).href,h=ENV.standalone?'<a id="arTab" href="'+abs+'" target="_blank" rel="noopener"><img src="ar/ar_go.png" width="260" height="60" alt="AR" style="display:block;border-radius:12px"></a>':'<a id="arQL" rel="ar" href="'+abs+'#allowsContentScaling=0"><img src="ar/ar_go.png" width="260" height="60" alt="AR" style="display:block;border-radius:12px"></a>';
     var canShare=false;try{canShare=!!(navigator.canShare&&navigator.canShare({files:[new File([window.__arLast.usdz],'rama.usdz',{type:'model/vnd.usdz+zip'})]}))}catch(e){}
@@ -3308,7 +3316,7 @@ function M11open(withTable){
     }).catch(function(e){st(ov,T('eExp')+e,true)});return}
   // Android / komputer: model-viewer
   var mvOK=!!customElements.get('model-viewer');if(!mvOK){st(ov,T('eMV'),true);return}
-  arURL(glb,'rama_model.glb').then(function(r){window.__arLast.how=r.how;var src=r.how=='cache'?r.url:URL.createObjectURL(glb);
+  arURL(glb,'rama_model.glb').then(function(r){if(!live(ov))return;window.__arLast.how=r.how;var src=r.how=='cache'?r.url:URL.createObjectURL(glb);ov.__urls=(ov.__urls||[]).concat(src.indexOf('blob:')==0?[src]:[]);
    var mv=document.createElement('model-viewer');mv.id='mv';mv.setAttribute('src',src);mv.setAttribute('ar','');mv.setAttribute('ar-modes','webxr scene-viewer quick-look');mv.setAttribute('ar-scale','fixed');
    mv.setAttribute('camera-controls','');mv.setAttribute('auto-rotate','');mv.style.cssText='width:100%;height:46vh;background:#05070c;border-radius:16px';
    usdz.then(function(u){mv.setAttribute('ios-src',URL.createObjectURL(u))});ov.querySelector('#mvw').appendChild(mv);mv.addEventListener('ar-tracking',function(e){if(e.detail&&e.detail.status=='tracking')window.__arPlane&&__arPlane(ov)});mv.addEventListener('ar-status',function(e){if(e.detail&&e.detail.status=='object-placed')window.__arPlane&&__arPlane(ov)});
