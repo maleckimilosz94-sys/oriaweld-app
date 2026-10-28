@@ -2488,7 +2488,8 @@ try{(function(){var V=(m.nums||[]).map(function(n){return n&&n.p&&+n.p.value}).f
  m.size.forEach(function(sv,i){var best=null;V.forEach(function(v){var d=Math.abs(sv-v);if(d>0.05&&d<=Math.min(3,0.005*v)&&(!best||d<Math.abs(sv-best)))best=v});if(best){k[i]=best/sv;ch=1}});
  if(ch){m.geo.scale(k[0],k[1],k[2]);m.geo.computeBoundingBox();var c=m.geo.boundingBox;m.size=[c.max.x-c.min.x,c.max.y-c.min.y,c.max.z-c.min.z];m.sizeSnap=k}})()}catch(e){}if(!window.__noAutoMixed&&(m.kind=='solid'||m.kind=='frame')&&(pick.name=='blachy z żebrem'||pick.name=='słup z podstawą i żebrami')&&(m.kindWhy||[]).indexOf('wybrane ręcznie')<0){m.kindFrom=m.kind;m.kind='mixed';m.autoMixed=true;if((m.kindWhy||[]).indexOf(MIXW2)<0)m.kindWhy=(m.kindWhy||[]).concat([MIXW2]);}else if(!window.__noAutoMixed&&m.kind=='solid'&&/zespół spawany/.test(pick.name)&&pick.geo.userData&&(pick.geo.userData.partsList||[]).length>=3&&(m.kindWhy||[]).indexOf('wybrane ręcznie')<0){m.kind='mixed';m.autoMixed=true;if((m.kindWhy||[]).indexOf(MIXW)<0)m.kindWhy=(m.kindWhy||[]).concat([MIXW]);}}var MIXW2='blachy spawane z żebrem usztywniającym – konstrukcja mieszana';var MIXW='model złożony z kilku spawanych blach/części – konstrukcja mieszana';
 function needAsk(m){var f=m.V.front||m.V.ortho[0];if(!f)return[];var need=m.edges.filter(function(e){return (e.v===f||e.v===m.V.top||e.v===m.V.side)&&(e.total||e.len>Math.max(e.v.ob.w,e.v.ob.h)*0.15)}),out=[];
- need.forEach(function(e){var l=m.links.filter(function(l){return l.e===e})[0];if(l&&l.st!='o')return;if(m.links.some(function(l){return l.st!='o'&&l.e.v===e.v&&l.e.h===e.h&&Math.abs(l.e.len-e.len)<3}))return;if(out.some(function(o){return o.v===e.v&&o.h===e.h&&Math.abs(o.len-e.len)<3}))return;out.push(e);});
+ var TB=window.__lastEngineRes&&window.__lastEngineRes.titleBlockBox,SH=m.info&&m.info.sheet,inTB=function(e){var o=e.v&&e.v.ob;if(SH&&o&&o.h>0.75*SH.height&&o.w<0.4*SH.width&&o.x+o.w>0.85*SH.width)return true;if(!TB)return false;var cx=(e.p[0]+e.q[0])/2,cy=(e.p[1]+e.q[1])/2;return cx>=TB.x&&cx<=TB.x+TB.w&&cy>=TB.y&&cy<=TB.y+TB.h};
+ need.forEach(function(e){if(inTB(e)||(m.dropE||[]).some(function(d){return d.v===e.v&&d.h===e.h&&Math.abs(d.len-e.len)<3}))return;var l=m.links.filter(function(l){return l.e===e})[0];if(l&&l.st!='o')return;if(m.links.some(function(l){return l.st!='o'&&l.e.v===e.v&&l.e.h===e.h&&Math.abs(l.e.len-e.len)<3}))return;if(out.some(function(o){return o.v===e.v&&o.h===e.h&&Math.abs(o.len-e.len)<3}))return;out.push(e);});
  out.sort(function(a,b){return (b.total||0)-(a.total||0)||b.len-a.len});return out.slice(0,5);}
 function manualAxes(m){if(window.__noManAx||!m.manual||!m.manual.length||!m.geo||!m.geo.scale||!m.size||!m.mmpx)return;var F={0:[],1:[],2:[]},V=m.V;m.manual.forEach(function(mm){var e=mm.e;if(!e||!(e.len>0))return;var ax=e.v===V.top?(e.h?0:2):e.v===V.side?(e.h?2:1):(e.h?0:1);F[ax].push(mm.value/(e.len*m.mmpx));});var k=[1,1,1],ch=[];[0,1,2].forEach(function(i){var A=F[i].sort(function(a,b){return a-b});if(!A.length)return;var f=A[A.length>>1];if(f>0.2&&f<5&&Math.abs(f-1)>0.03){k[i]=f;ch.push(i)}});if(!ch.length)return;m.geo.scale(k[0],k[1],k[2]);m.geo.computeBoundingBox();var c=m.geo.boundingBox;m.size=[c.max.x-c.min.x,c.max.y-c.min.y,c.max.z-c.min.z];m.manAx=k;var N=['długość','wysokość','głębokość'];m.manNote='Wpisane wymiary nie pasują do proporcji rysunku – '+ch.map(function(i){return N[i]+' ×'+k[i].toFixed(2)}).join(', ')+' dopasowano do wpisanych wartości. Sprawdź, czy wymiar dotyczy właściwej osi.';if(m.pick&&m.pick.how&&m.pick.how.indexOf('wpisane')<0)m.pick.how+=' · oś dopasowana do wpisanych wymiarów';}
 function askMissing(m,i){var Q=m.askQ||(m.askQ=needAsk(m));if(i>=Q.length){if(m.manual.length){if(!m.__recalc&&!window.__syncRecalc){m.__recalc=1;var ap0=document.getElementById('app');if(ap0)ap0.innerHTML='<h1>⚡ Pełny automat</h1><div id="aprog"><p class="aprog"><span class="spin"></span> Przeliczam model z wpisanymi wymiarami…</p></div>';return setTimeout(function(){askMissing(m,i)},60);}m.__recalc=0;linkNums(m);rebuild(m);manualAxes(m);}window.__autoResult=sum2(m);return showAuto2(m);}
@@ -2496,9 +2497,9 @@ function askMissing(m,i){var Q=m.askQ||(m.askQ=needAsk(m));if(i>=Q.length){if(m.
  x.strokeStyle='rgba(249,115,22,.9)';x.lineWidth=6;x.beginPath();x.moveTo((e.p[0]-x0)*k,(e.p[1]-y0)*k);x.lineTo((e.q[0]-x0)*k,(e.q[1]-y0)*k);x.stroke();
  var est=Math.round(e.len*m.mmpx),app=document.getElementById('app');
  app.innerHTML='<h1>Nie mogę odczytać tego wymiaru – wpisz go</h1><p class="hint">Wymiar '+(i+1)+' z '+Q.length+' · '+(e.v===m.V.front?'PRZÓD':e.v===m.V.top?'GÓRA':'BOK')+' · '+(e.h?'poziomy':'pionowy')+(lk?' · odczytałem „'+lk.value+'” – niepewne':'')+'</p><img src="'+c.toDataURL()+'" style="width:100%;border-radius:12px;border:1px solid #e5e7eb"><p class="hint small">Pomarańczowa linia = mierzony odcinek. Szacunek z obrazu: ≈'+est+' mm</p>'+
- '<input id="aval" type="text" inputmode="decimal" pattern="[0-9]*" placeholder="mm" value="'+(lk?lk.value:'')+'" style="font-size:28px;width:100%;padding:12px;border-radius:12px;border:2px solid #3b82f6;box-sizing:border-box"><button class="main" id="aok">Zatwierdź</button><button class="main alt" id="askip">Pomiń</button><button class="main alt" id="askall">Pomiń wszystkie</button>';
+ '<input id="aval" type="text" inputmode="decimal" pattern="[0-9]*" placeholder="mm" value="'+(lk?lk.value:'')+'" style="font-size:28px;width:100%;padding:12px;border-radius:12px;border:2px solid #3b82f6;box-sizing:border-box"><button class="main" id="aok">Zatwierdź</button><button class="main alt" id="askip">Pomiń</button><button class="main alt" id="askall">Pomiń wszystkie</button><button class="main alt" id="adel" style="color:#b91c1c">Usuń wymiar</button>';
  document.getElementById('aok').onclick=function(){var val=parseFloat((document.getElementById('aval').value||'').replace(',','.'));if(val>0)m.manual.push({e:e,value:val});askMissing(m,i+1);};
- document.getElementById('askip').onclick=function(){askMissing(m,i+1);};document.getElementById('askall').onclick=function(){askMissing(m,Q.length);};}
+ document.getElementById('askip').onclick=function(){askMissing(m,i+1);};document.getElementById('askall').onclick=function(){askMissing(m,Q.length);};document.getElementById('adel').onclick=function(){(m.dropE||(m.dropE=[])).push(e);m.links=m.links.filter(function(l){return l.e!==e});m.manual=m.manual.filter(function(x){return x.e!==e});Q.splice(i,1);askMissing(m,i);};}
 // --- wynik
 function cechyTx(s){s=String(s||'').replace(/：/g,':');var F={},n=0,m,re;function add(k){if(!F[k]){F[k]=1;n++;}}
 re=/(?:SL?OT|6L0T|LOT)\s*(\d+(?:\.\d+)?)\s*[xX:]\s*(\d+(?:\.\d+)?)/g;while(m=re.exec(s))add('f'+m[1]+'x'+m[2]);
@@ -2781,7 +2782,7 @@ init();</script><script>(function(){var sp=document.getElementById('splash');if(
 [" · poziomy\\b"," · horizontal"," · waagerecht"],[" · pionowy\\b"," · vertical"," · senkrecht"],
 [" · odczytałem „([^”]*)” – niepewne"," · read “$1” – uncertain"," · gelesen „$1“ – unsicher"],
 ["^Pomarańczowa linia = mierzony odcinek\\. Szacunek z obrazu: ≈","Orange line = measured segment. Estimate from image: ≈","Orange Linie = gemessene Strecke. Schätzung aus Bild: ≈"],
-["^Zatwierdź$","Confirm","Bestätigen"],["^Pomiń wszystkie$","Skip all","Alle überspringen"],["^Pomiń$","Skip","Überspringen"],
+["^Zatwierdź$","Confirm","Bestätigen"],["^Pomiń wszystkie$","Skip all","Alle überspringen"],["^Usuń wymiar$","Delete dimension","Maß löschen"],["^Pomiń$","Skip","Überspringen"],
 ["^Obróć w lewo$","Rotate left","Nach links drehen"],["^Obróć w prawo$","Rotate right","Nach rechts drehen"]
 ].forEach(function(r){RU.push([new RegExp(r[0],'g'),r[1],r[2]]);});
 var OR=new WeakMap(),busy=false;function tr(t){if(L=='pl')return t;var k=t.trim();if(!k)return t;var d=DIC[k];if(d)return t.replace(k,d[L]);var o=k,i=L=='en'?1:2;RU.forEach(function(r){o=o.replace(r[0],r[i]);});return o==k?t:t.replace(k,o);}
@@ -3029,7 +3030,7 @@ function enter(){var v=document.getElementById('view');if(!v||v.classList.contai
  v.appendChild(u);sync(u);
  u.querySelector('#fsmin').onclick=function(ev){ev.stopPropagation();exit()};
  u.querySelector('#fsset').onclick=function(ev){ev.stopPropagation();var s=u.querySelector('#fssheet');s.hidden=!s.hidden;this.classList.toggle('on',!s.hidden);sync(u);setTimeout(fit,60)};
- var a=u.querySelector('#fsar');if(a)a.onclick=function(ev){ev.stopPropagation();var b=arBtn();if(b)b.click()};
+ var a=u.querySelector('#fsar');if(a)a.onclick=function(ev){ev.stopPropagation();if(window.__oriaGoAR)window.__oriaGoAR(ev);else{var b=arBtn();if(b)b.click();else if(typeof M11open==="function")M11open(false)}};
  [].forEach.call(u.querySelectorAll('[data-g]'),function(b){b.onclick=function(ev){ev.stopPropagation();if(b.dataset.g=='fit')fit();else{var q=document.querySelector('.v3tools [data-v="'+b.dataset.g+'"]');if(q)q.click()}}});
  u.addEventListener('pointerdown',function(ev){ev.stopPropagation()});
  setTimeout(fit,120);window.__fs=true;}
@@ -3277,7 +3278,7 @@ window.__arSafariURL=safariURL;
 /* oria-122: remont AR – jedna aktywna sesja (token __arSeq), sprzątanie przy zamknięciu, wyjście do historii */
 window.__arSeq=window.__arSeq||0;function live(ov){return !!ov&&ov.__seq===window.__arSeq&&document.body.contains(ov)}
 function arClose(toHist){window.__arSeq++;var ov=document.getElementById('ar');if(ov){var mv=ov.querySelector('#mv');if(mv){try{mv.removeAttribute('src')}catch(e){}mv.remove()}(ov.__urls||[]).forEach(function(u){try{URL.revokeObjectURL(u)}catch(e){}});ov.remove()}window.__arLast=null;window.__usdzReady=null;
- if(toHist&&window.HIST&&HIST.show){try{hist.push(cur)}catch(e){}HIST.show();try{scrollTo(0,0)}catch(e){}}}window.__arClose=arClose;
+ if(toHist&&window.HIST&&HIST.show){try{HIST.show()}catch(e){}try{scrollTo(0,0)}catch(e){}try{location.hash='demo=historia'}catch(e){}}}window.__arClose=arClose;
 addEventListener('pageshow',function(e){if(e.persisted&&document.getElementById('ar'))arClose(false)});
 function overlay(withTable){var ov=document.getElementById('ar');if(ov)arClose(false);window.__arSeq++;ov=document.createElement('div');ov.id='ar';
  ov.innerHTML='<div class="arbar"><button id="arx" aria-label="'+T('histBk')+'">‹</button><span class="pill">📏 '+T('title')+'</span><button id="arHist" type="button">← '+T('histBk')+'</button></div>'+
@@ -3338,9 +3339,42 @@ function M11open(withTable){
  wireDl(ov,withTable,true)}
 function wireDl(ov,withTable,lazy){if(lazy)return;waitBtn(ov);exportGLB(function(b,w){arURL(b,'rama_model.glb').then(function(r){arm(ov,'dg',r,'rama_model.glb')});exportUSDZ(w).then(function(u){return arURL(u,'rama_model.usdz')}).then(function(r){arm(ov,'du',r,'rama_model.usdz')}).catch(function(e){st(ov,T('eExp')+e,true)})},withTable)}
 window.openAR=openAR=M11open;
-/* oria-124: AR zawsze reaguje na 1 tapnięcie (aar/arb/har/fsar); błąd widoczny zamiast ciszy */
-(function(){var nav=0;window.addEventListener('pagehide',function(){nav=1});document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('#aar,#arb,#har');if(!t)return;nav=0;setTimeout(function(){if(nav||document.getElementById('ar')||document.hidden)return;try{M11open(false)}catch(x){alert('AR: '+(x&&x.message||x))}},400)},true);
-window.addEventListener('error',function(e){if(document.getElementById('ar')&&!document.getElementById('ar').__errShown){try{var s=document.querySelector('#ar .m11st');if(s){s.textContent='AR: '+e.message;s.style.color='#ef4444'}}catch(x){}}})})();
+/* oria-125: AR – fsar/fullscreen + toast; bezpośredni start gdy brak #aar */
+(function(){
+ function lang(){try{return localStorage.getItem('oria_lang')||'pl'}catch(e){return 'pl'}}
+ function toast(msg){
+  try{
+   var o=document.getElementById('arToast');
+   if(!o){
+    o=document.createElement('div');o.id='arToast';
+    o.style.cssText='position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:2147483646;max-width:90vw;padding:12px 16px;border-radius:12px;background:rgba(16,20,29,.94);border:1px solid rgba(34,211,238,.45);color:#e3e8ef;font:600 14px system-ui;box-shadow:0 8px 24px rgba(0,0,0,.45)';
+    document.body.appendChild(o);
+   }
+   o.textContent=msg;o.hidden=false;clearTimeout(o.__t);
+   o.__t=setTimeout(function(){o.hidden=true},2800);
+  }catch(e){}
+ }
+ function goAR(ev){
+  if(ev){try{ev.preventDefault();ev.stopPropagation()}catch(e){}}
+  var L=lang();
+  toast(({en:'Opening AR…',de:'AR wird geöffnet…'}[L])||'Otwieram AR…');
+  try{
+   if(typeof M11open==='function')M11open(false);
+   else if(typeof openAR==='function')openAR(false);
+   else toast('AR niedostępne');
+  }catch(x){
+   var m='AR: '+(x&&x.message||x);
+   toast(m);
+   try{alert(m)}catch(e){}
+  }
+ }
+ window.__oriaGoAR=goAR;
+ document.addEventListener('click',function(e){
+  var t=e.target&&e.target.closest&&e.target.closest('#aar,#arb,#har,#fsar');
+  if(!t)return;
+  goAR(e);
+ },true);
+})();
 /* v88: USDZ liczony wcześniej, w wolnej chwili (nie w momencie dotknięcia); render 3D wstrzymany, gdy otwarte okno AR */
 function __arKey(){try{var g=R3.grp;if(!g)return '';var b=new THREE.Box3().setFromObject(g);var hh=2166136261,nm=0;g.updateMatrixWorld(true);g.traverse(function(o){if(!o.isMesh||!o.geometry)return;nm++;var a=o.geometry.attributes.position,ix=o.geometry.index,e=o.matrixWorld.elements;if(!a)return;var st=Math.max(1,Math.floor(a.count/4096));hh=Math.imul(hh^a.count,16777619);hh=Math.imul(hh^(ix?ix.count:0),16777619);for(var i=0;i<16;i++)hh=Math.imul(hh^Math.round(e[i]*1000),16777619);for(var i=0;i<a.count;i+=st){hh=Math.imul(hh^Math.round(a.getX(i)*100),16777619);hh=Math.imul(hh^Math.round(a.getY(i)*100),16777619);hh=Math.imul(hh^Math.round(a.getZ(i)*100),16777619)}});/* v90a: klucz zawiera hash geometrii (wycięcia) */
 return g.uuid+':'+g.children.length+':'+[b.min.x,b.min.y,b.min.z,b.max.x,b.max.y,b.max.z].map(function(v){return Math.round(v)}).join(',')+':'+nm+':'+(hh>>>0).toString(36)}catch(e){return ''}}
@@ -4001,12 +4035,26 @@ html:not(.light) #m19bg{opacity:.60!important}
 if(window.__geoG0===true)window.__sheetG0Ready=import('./vendor/engine/sheet_g0.js').then(function(m){m.registerSheetG0(window)}).catch(function(e){console.warn('sheetG0',e)});
 
 window.__patentHookReady=true;
-if(window.__geoG0===true){var wrapE=function(){var E=window.RamaEngine;if(!E||!E.readDrawing||E.__g0w)return !!(E&&E.__g0w);var rd=E.readDrawing;E.readDrawing=function(){return Promise.resolve(rd.apply(E,arguments)).then(function(r){window.__lastEngineRes=r;return Promise.resolve(window.__sheetG0Ready).then(function(){return r})})};E.__g0w=1;return true};if(!wrapE()){var wi=setInterval(function(){if(wrapE())clearInterval(wi)},500);setTimeout(function(){clearInterval(wi)},60000);}
-window.__patentG0=function(m,C){if(window.__pdfVec===true&&window.__pdfVecRes&&window.PdfVecToG0&&window.SheetG0Cand&&window.THREE){try{if(window.__pdfVecRes.side_bends&&window.PdfVecToBent){var bd=window.PdfVecToBent(window.__pdfVecRes,{THREE:window.THREE});if(bd&&bd.geometry){bd.geometry.center();bd.geometry.computeVertexNormals();window.__pdfBent=bd;C.unshift({name:'blacha gięta (PDF)',geo:bd.geometry,how:'PDF wektor: profil '+bd.type+' · '+(function(n){n=n|0;var m=n%10,c=n%100;return n+(n===1?' gięcie':(m>=2&&m<=4&&(c<12||c>14))?' gięcia':' gięć');})(bd.bends||0)+' · gr. '+bd.t+' mm · dł. '+Math.round(bd.length)+' mm (z widoku)'+(bd.anyBad?' · ⚠ wymiary półek do sprawdzenia':''),g0:1,g0h:1,g0b:1,force:1});return;}}var g=window.PdfVecToG0(window.__pdfVecRes);if(g){var Wv=(m.size&&m.size[0]>0)?m.size[0]:(g.widthMm>0?g.widthMm:g.widthPt*25.4/72);var cv=window.SheetG0Cand({views:[g],thicknessMm:window.__tpNum||m.thicknessMm||g.thicknessMm||4},{widthMm:Wv});if(cv&&cv.geom){window.__g0Width=Wv;C.unshift({name:'blacha z obrysu (PDF)',geo:cv.geom,how:'PDF wektor: '+g.nWin+' okn + '+g.nHole+' otw · szer. '+Math.round(Wv)+' mm'+((m.size&&m.size[0]>0)?'':(g.meta&&g.meta.scaleSrc?' ('+g.meta.scaleSrc+')':' (1:1 z PDF)'))+(g.loops?' · obrys '+g.outlineVerts+' wierzch.':''),g0:1,g0h:Math.max(1,(g.nWin||0)+(g.nHole||0)),force:1});return;}else console.warn('g0pdf: SheetG0Cand bez geometrii');}else console.warn('g0pdf: PdfVecToG0 null');}catch(e){console.warn('g0pdf',e)}}else if(window.__pdfVec===true&&window.__pdfVecRes===null&&window.__pvP)console.warn('g0pdf: __pdfVecRes puste');if(window.__pdfUpload){console.warn('g0pdf: upload PDF – bez G0 ze zdjęcia');return;}var r=window.__lastEngineRes;if(!r||!window.SheetG0Cand||!window.THREE)return;var v=(r.views||[]).filter(function(v){return v.outlinePolygon&&v.outlinePolygon.length>=3&&v.holes&&v.holes.length})[0];if(!v)return;
+if(window.__geoG0===true){var wrapE=function(){var E=window.RamaEngine;if(!E||!E.readDrawing||E.__g0w)return !!(E&&E.__g0w);var rd=E.readDrawing;E.readDrawing=function(){window.__lastSheet=arguments[0];return Promise.resolve(rd.apply(E,arguments)).then(function(r){window.__lastEngineRes=r;return Promise.resolve(window.__sheetG0Ready).then(function(){return r})})};E.__g0w=1;return true};if(!wrapE()){var wi=setInterval(function(){if(wrapE())clearInterval(wi)},500);setTimeout(function(){clearInterval(wi)},60000);}
+window.__photoPlateG0=function(src,tb){var cv=window.cv;if(!cv||!cv.Mat||!src)return null;var M=[];function n(x){M.push(x);return x}
+try{var im=n(cv.imread(src)),g=n(new cv.Mat());cv.cvtColor(im,g,cv.COLOR_RGBA2GRAY);var W=g.cols,H=g.rows,sc=1;if(W>1600){sc=1500/W;var g2=n(new cv.Mat());cv.resize(g,g2,new cv.Size(Math.round(W*sc),Math.round(H*sc)),0,0,cv.INTER_AREA);g=g2;W=g.cols;H=g.rows;}
+var mb=n(new cv.Mat());cv.medianBlur(g,mb,21);var bg=n(new cv.Mat());cv.dilate(mb,bg,cv.getStructuringElement(cv.MORPH_RECT,new cv.Size(61,61)));var m7=n(new cv.Mat());cv.medianBlur(g,m7,7);
+var P=n(new cv.Mat(H,W,cv.CV_8UC1,new cv.Scalar(0))),a=m7.data,b=bg.data,p=P.data;for(var i=0;i<a.length;i++)p[i]=(b[i]>0&&a[i]/b[i]<0.90)?255:0;
+if(tb){var x0=Math.max(0,Math.floor(tb.x*sc)),y0=Math.max(0,Math.floor(tb.y*sc)),x1=Math.min(W,Math.ceil((tb.x+tb.w)*sc)),y1=Math.min(H,Math.ceil((tb.y+tb.h)*sc));for(var y=y0;y<y1;y++)for(var x=x0;x<x1;x++)p[y*W+x]=0;}
+cv.morphologyEx(P,P,cv.MORPH_OPEN,cv.Mat.ones(7,7,cv.CV_8U));cv.morphologyEx(P,P,cv.MORPH_CLOSE,cv.Mat.ones(9,9,cv.CV_8U));
+var cs=n(new cv.MatVector()),hi=n(new cv.Mat());cv.findContours(P,cs,hi,cv.RETR_CCOMP,cv.CHAIN_APPROX_SIMPLE);var best=null;
+for(var i=0;i<cs.size();i++){if(hi.data32S[i*4+3]>=0)continue;var c=cs.get(i),A=cv.contourArea(c),r=cv.boundingRect(c);c.delete();if(A<0.01*W*H||r.x<=3||r.y<=3||r.x+r.width>=W-3||r.y+r.height>=H-3||r.width*r.height>0.5*W*H)continue;
+ var hs=[],ch=hi.data32S[i*4+2];while(ch>=0){var hc=cs.get(ch),ha=cv.contourArea(hc),hr=cv.boundingRect(hc);if(ha>0.01*A&&ha/(hr.width*hr.height)>0.45)hs.push(hc);else hc.delete();ch=hi.data32S[ch*4];}
+ var s=hs.length*10+A/(W*H);if(hs.length&&(!best||s>best.s)){if(best)best.hs.forEach(function(h){h.delete()});best={i:i,s:s,hs:hs,r:r}}else hs.forEach(function(h){h.delete()});}
+if(!best)return null;function poly(c){var ap=new cv.Mat();cv.approxPolyDP(c,ap,0.01*cv.arcLength(c,true),true);var o=[];for(var k=0;k<ap.rows;k++)o.push([ap.data32S[2*k]/sc,ap.data32S[2*k+1]/sc]);ap.delete();return o}
+var oc=cs.get(best.i),out={outlinePolygon:poly(oc),holes:best.hs.map(poly),bboxPx:{w:best.r.width/sc,h:best.r.height/sc}};oc.delete();best.hs.forEach(function(h){h.delete()});return out;}catch(e){console.warn('photoPlateG0',e);return null}finally{M.forEach(function(x){try{x.delete()}catch(e){}})}};
+window.__patentG0=function(m,C){if(window.__pdfVec===true&&window.__pdfVecRes&&window.PdfVecToG0&&window.SheetG0Cand&&window.THREE){try{if(window.__pdfVecRes.side_bends&&window.PdfVecToBent){var bd=window.PdfVecToBent(window.__pdfVecRes,{THREE:window.THREE});if(bd&&bd.geometry){bd.geometry.center();bd.geometry.computeVertexNormals();window.__pdfBent=bd;C.unshift({name:'blacha gięta (PDF)',geo:bd.geometry,how:'PDF wektor: profil '+bd.type+' · '+(function(n){n=n|0;var m=n%10,c=n%100;return n+(n===1?' gięcie':(m>=2&&m<=4&&(c<12||c>14))?' gięcia':' gięć');})(bd.bends||0)+' · gr. '+bd.t+' mm · dł. '+Math.round(bd.length)+' mm (z widoku)'+(bd.anyBad?' · ⚠ wymiary półek do sprawdzenia':''),g0:1,g0h:1,g0b:1,force:1});return;}}var g=window.PdfVecToG0(window.__pdfVecRes);if(g){var Wv=(m.size&&m.size[0]>0)?m.size[0]:(g.widthMm>0?g.widthMm:g.widthPt*25.4/72);var cv=window.SheetG0Cand({views:[g],thicknessMm:window.__tpNum||m.thicknessMm||g.thicknessMm||4},{widthMm:Wv});if(cv&&cv.geom){window.__g0Width=Wv;C.unshift({name:'blacha z obrysu (PDF)',geo:cv.geom,how:'PDF wektor: '+g.nWin+' okn + '+g.nHole+' otw · szer. '+Math.round(Wv)+' mm'+((m.size&&m.size[0]>0)?'':(g.meta&&g.meta.scaleSrc?' ('+g.meta.scaleSrc+')':' (1:1 z PDF)'))+(g.loops?' · obrys '+g.outlineVerts+' wierzch.':''),g0:1,g0h:Math.max(1,(g.nWin||0)+(g.nHole||0)),force:1});return;}else console.warn('g0pdf: SheetG0Cand bez geometrii');}else console.warn('g0pdf: PdfVecToG0 null');}catch(e){console.warn('g0pdf',e)}}else if(window.__pdfVec===true&&window.__pdfVecRes===null&&window.__pvP)console.warn('g0pdf: __pdfVecRes puste');if(window.__pdfUpload){console.warn('g0pdf: upload PDF – bez G0 ze zdjęcia');return;}var r=window.__lastEngineRes;if(!r||!window.SheetG0Cand||!window.THREE)return;var bbA=function(P){var xs=P.map(function(p){return p[0]}),ys=P.map(function(p){return p[1]});return (Math.max.apply(0,xs)-Math.min.apply(0,xs))*(Math.max.apply(0,ys)-Math.min.apply(0,ys))};var v=(r.views||[]).filter(function(v){return v.outlinePolygon&&v.outlinePolygon.length>=3&&v.holes&&v.holes.length&&!(v.bbox&&bbA(v.outlinePolygon)<0.3*v.bbox.w*v.bbox.h)})[0];var src125='';
+ if(window.__photoPlateG0&&window.__noPhotoPlate!==true){var pp=window.__photoPlateG0(window.__lastSheet,r.titleBlockBox);if(pp&&pp.holes.length&&(!v||pp.holes.length>=v.holes.length)){v=pp;src125='foto: '}}if(!v)return;
  var xs=v.outlinePolygon.map(function(p){return p[0]}),pw=Math.max.apply(0,xs)-Math.min.apply(0,xs);if(!(pw>0))return;
  var mpp=r.scaleGuess&&r.scaleGuess.mmPerPx,W=mpp?pw*mpp:(m.size&&m.size[0]>0?m.size[0]:0);if(!(W>0))return;
+ if(src125&&m.nums){var tbx=r.titleBlockBox,bd=null;m.nums.forEach(function(q){var x=q.p&&q.p.value;if(!(x>0))return;var e=Math.abs(Math.log(x/W));if(e<0.4&&(!bd||e<bd.e))bd={x:x,e:e}});if(bd){W=bd.x;src125+='szer. z wymiaru · '}}
  var mod={views:[v],thicknessMm:window.__tpNum||m.thicknessMm||4};window.__g0Width=W;var c=window.SheetG0Cand(mod,{widthMm:W});if(!c||!c.geom)return;
- C.unshift({name:'blacha z obrysu (G0)',geo:c.geom,how:(c.why||[]).join(', ')+' · szer. '+Math.round(W)+' mm'+(mpp?'':' (skala z bryły)'),g0:1,g0h:v.holes.length,force:1});};}
+ C.unshift({name:'blacha z obrysu (G0)',geo:c.geom,how:src125+(c.why||[]).join(', ')+' · szer. '+Math.round(W)+' mm'+(mpp?'':' (skala z bryły)'),g0:1,g0h:v.holes.length,force:1});};}
 if(window.__pdfVec===true){document.addEventListener('click',function(e){var t=e.target;var i=t&&(t.matches&&t.matches('input[type=file]')?t:(t.querySelector&&t.querySelector('input[type=file]')));if(i&&/image\/\*/.test(i.accept||'')&&!/pdf/.test(i.accept))i.accept='image/*,application/pdf,.pdf';},true);
 function pdfAcc(){document.querySelectorAll('input[type=file]').forEach(function(i){if(/image\/\*/.test(i.accept||'')&&!/pdf/.test(i.accept))i.accept='image/*,application/pdf,.pdf'})}pdfAcc();new MutationObserver(pdfAcc).observe(document.documentElement,{childList:true,subtree:true});
 window.__pdfRead=function(f){return f.arrayBuffer().then(function(buf){window.__pdfVecRes=null;window.__pdfUpload=true;var b2=buf.slice(0),b3=buf.slice(0);var pv1=function(d){return window.PdfVec(new Uint8Array(d),{pdfVec:true})};window.__pvP=pv1(buf).catch(function(e){console.warn('pdfVec retry',e);return new Promise(function(ok){setTimeout(ok,300)}).then(function(){return pv1(b3)})}).then(function(r){window.__pdfVecRes=r;console.log('pdfVec',r&&{w:r.windows_total,h:r.holes_total})}).catch(function(e){console.warn('pdfVec',e)});
