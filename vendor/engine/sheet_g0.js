@@ -47,4 +47,17 @@ export function registerSheetG0(win=globalThis){
   win.SheetG0Cand=function(m,o={}){ const v=(m.views||[]).filter(v=>v.outlinePolygon&&v.holes&&v.holes.length).sort((a,b)=>b.holes.length-a.holes.length)[0];
     if(!v) return null; const d=buildSheetG0({outline:v.outlinePolygon,holes:v.holes,thicknessMm:m.thicknessMm,widthMm:o.widthMm});
     return {id:'sheetG0',label:'blacha z obrysu',geom:d.geometry,score:0.9,why:['G0: '+d.holes.length+' otwory']}; };
+  win.PdfVecToG0=r=>pdfVecToG0View(r);
+}
+// PdfVec -> G0: widok wektorowy (bbox w pt, Y w dół) -> {outlinePolygon, holes} dla SheetG0Cand.
+// Okna = prostokąty z bbox, otwory okrągłe = 16-kąty. Wybiera widok nie-iso z największą liczbą okien+otworów.
+const rectP=([x,y,w,h])=>[[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
+const circP=([x,y,w,h],n=16)=>{const cx=x+w/2,cy=y+h/2;return Array.from({length:n},(_,i)=>[cx+w/2*Math.cos(2*Math.PI*i/n),cy+h/2*Math.sin(2*Math.PI*i/n)]);};
+export function pdfVecToG0View(res){
+  if(!res||!res.views) return null;
+  const v=res.views.filter(v=>!v.iso&&((v.windows||[]).length+(v.holes||[]).length)>0)
+    .sort((a,b)=>(b.windows.length+b.holes.length)-(a.windows.length+a.holes.length)||b.outline.area_pt2-a.outline.area_pt2)[0];
+  if(!v) return null;
+  const holes=[...v.windows.map(o=>rectP(o.bbox)),...v.holes.map(o=>circP(o.bbox))];
+  return {outlinePolygon:rectP(v.bbox),holes,widthPt:v.bbox[2],src:'pdfVec',nWin:v.windows.length,nHole:v.holes.length};
 }
