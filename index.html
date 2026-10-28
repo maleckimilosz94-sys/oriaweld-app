@@ -3285,15 +3285,15 @@ function overlay(withTable){var ov=document.getElementById('ar');if(ov)arClose(f
  '<label class="arTbl"><input type="checkbox" id="arT"'+(withTable?' checked':'')+'> '+T('tbl')+'</label>'+
  '<div class="m11dl"><button class="main alt" id="du">'+T('dlU')+'</button><button class="main alt" id="dg">'+T('dlG')+'</button></div>'+
  '<p class="m11env">'+[ENV.ios?'iOS':ENV.android?'Android':'desktop',ENV.https?'HTTPS':'HTTP',ENV.standalone?'PWA':'browser','QL:'+(ENV.qlook?'tak':'nie'),'WebXR:'+(ENV.webxr?'tak':'nie'),'SW:'+(ENV.sw?'tak':'nie')].join(' · ')+'</p>';
- document.body.appendChild(ov);if(!ENV.ios)ov.classList.add('arNoPlane');ov.querySelector('#arx').onclick=function(){arClose(false)};ov.querySelector('#arHist').onclick=function(){arClose(true)};ov.__seq=window.__arSeq;ov.querySelector('#arT').onchange=function(){openAR(this.checked)};return ov}
+ document.body.appendChild(ov);ov.querySelector('#arx').onclick=function(){arClose(false)};ov.querySelector('#arHist').onclick=function(){arClose(true)};ov.__seq=window.__arSeq;ov.querySelector('#arT').onchange=function(){openAR(this.checked)};return ov}
 function M11open(withTable){
  /* v88b: na iOS bez AR w aplikacji – kopia działającej strony testowej ar/: demo → ar/dN.usdz, własny projekt → zapis ar/live.usdz do cache, potem przejście do ar/live.html */
  if(ENV.ios&&!withTable){var hid=({"p1792730002810_617008":"d1","p1792730062141_429423":"d2","p1792730092210_994554":"d3","p1792730343735_882047":"d4","p1792730088013_521978":"d5","p1792730277882_175983":"d6","p1792731129150_336551":"d7"})[window.__histId];if(hid&&document.getElementById('hname')){location.href='ar/live.html?f='+hid+'&v='+Date.now()+'&lang='+L();return}
-  var ov0=overlay(false);st(ov0,'Przygotowuję model AR…');(function(){var h=document.createElement('div');h.className='arHold';h.id='arHold';h.innerHTML='<b>'+T('hold')+'</b><i></i><span>'+T('find')+'</span><small>'+T('m1')+'</small>';var m=ov0.querySelector('#mvw');if(m)m.appendChild(h)})();
+  var ov0=overlay(false);st(ov0,({en:'Preparing AR model…',de:'AR-Modell wird vorbereitet…'})[L()]||'Przygotowuję model AR…');/* oria-124: bez kalibracji; limit czasu + ponów */setTimeout(function(){if(!live(ov0)||window.__arLast&&window.__arLast.usdz&&ov0.__done)return;var a=ov0.querySelector('#m11act');st(ov0,({en:'AR model is taking too long.',de:'AR-Modell dauert zu lange.'})[L()]||'Model AR przygotowuje się za długo.',true);if(a){a.innerHTML='<button class="main orange m11go" id="arRetry">↻ '+(({en:'Retry',de:'Erneut'})[L()]||'Ponów')+'</button>';a.querySelector('#arRetry').onclick=function(){arClose(false);setTimeout(function(){openAR(false)},50)}}},20000);
   __arGet(false,function(glb,w,usdzP){if(!live(ov0))return;usdzP.then(function(ub){if(!live(ov0))throw 0;window.__arLast={glb:glb,usdz:ub};return sameOrigin(ub,'live.usdz')}).then(function(u){
-    if(!live(ov0))return;if(u){location.href='ar/live.html?f=live&v='+Date.now()+'&lang='+L();return}
+    if(!live(ov0))return;ov0.__done=1;if(u){location.href='ar/live.html?f=live&auto=1&v='+Date.now()+'&lang='+L();return}
     var act=ov0.querySelector('#m11act');var ok=false;try{ok=!!(navigator.canShare&&navigator.canShare({files:[new File([window.__arLast.usdz],'rama.usdz',{type:'model/vnd.usdz+zip'})]}))}catch(e){}
-    st(ov0,'Brak pamięci podręcznej (service worker) – odśwież stronę albo udostępnij plik.',true);
+    ov0.__done=1;st(ov0,'Brak pamięci podręcznej (service worker) – odśwież stronę albo udostępnij plik.',true);
     if(act&&ok){act.innerHTML='<button class="main orange m11go" id="arShare">⇪ Udostępnij plik .usdz</button>';act.querySelector('#arShare').onclick=function(){navigator.share({files:[new File([window.__arLast.usdz],'rama.usdz',{type:'model/vnd.usdz+zip'})]}).catch(function(){})}}
    }).catch(function(e){if(e!==0&&live(ov0))st(ov0,T('eExp')+e,true)})});return}
  /* v87: AR jako prosty moduł – plik .usdz pod prawdziwym adresem ar/live.usdz (SW, model/vnd.usdz+zip),
@@ -3317,11 +3317,11 @@ function M11open(withTable){
   // Android / komputer: model-viewer
   var mvOK=!!customElements.get('model-viewer');if(!mvOK){st(ov,T('eMV'),true);return}
   arURL(glb,'rama_model.glb').then(function(r){if(!live(ov))return;window.__arLast.how=r.how;var src=r.how=='cache'?r.url:URL.createObjectURL(glb);ov.__urls=(ov.__urls||[]).concat(src.indexOf('blob:')==0?[src]:[]);
-   var mv=document.createElement('model-viewer');mv.id='mv';mv.setAttribute('src',src);mv.setAttribute('ar','');mv.setAttribute('ar-modes','webxr scene-viewer quick-look');mv.setAttribute('ar-scale','fixed');
+   var mv=document.createElement('model-viewer');mv.id='mv';mv.setAttribute('src',src);mv.setAttribute('ar','');mv.setAttribute('ar-modes','scene-viewer webxr quick-look');mv.setAttribute('ar-scale','fixed');
    mv.setAttribute('camera-controls','');mv.setAttribute('auto-rotate','');mv.style.cssText='width:100%;height:46vh;background:#05070c;border-radius:16px';
    usdz.then(function(u){mv.setAttribute('ios-src',URL.createObjectURL(u))});ov.querySelector('#mvw').appendChild(mv);mv.addEventListener('ar-tracking',function(e){if(e.detail&&e.detail.status=='tracking')window.__arPlane&&__arPlane(ov)});mv.addEventListener('ar-status',function(e){if(e.detail&&e.detail.status=='object-placed')window.__arPlane&&__arPlane(ov)});
    var btn=document.createElement('button');btn.className='main orange m11go';btn.id='m11go';btn.textContent=T('go');ov.querySelector('#m11act').appendChild(btn);
-   function launch(){if(!ENV.ios&&!ENV.desktop&&ENV.https&&ENV.webxr&&window.__arXRgo){st(ov,T('launching'));window.__arXRgo(ov,withTable).catch(function(){launchMV()});return}launchMV()}
+   function launch(){if(!ENV.ios&&!ENV.desktop&&ENV.https&&ENV.webxr&&window.__arXRgo&&!(mv.canActivateAR||ENV.android&&r.how=='cache')){st(ov,T('launching'));window.__arXRgo(ov,withTable).catch(function(){launchMV()});return}launchMV()}
    function launchMV(){if(!ENV.https){st(ov,T('eHttps'),true);return}if(ENV.desktop){st(ov,T('eDesk'),true);return}
     var can=mv.canActivateAR;
     if(can){st(ov,T('launching'));try{mv.activateAR()}catch(e){}watch()}
@@ -3338,6 +3338,9 @@ function M11open(withTable){
  wireDl(ov,withTable,true)}
 function wireDl(ov,withTable,lazy){if(lazy)return;waitBtn(ov);exportGLB(function(b,w){arURL(b,'rama_model.glb').then(function(r){arm(ov,'dg',r,'rama_model.glb')});exportUSDZ(w).then(function(u){return arURL(u,'rama_model.usdz')}).then(function(r){arm(ov,'du',r,'rama_model.usdz')}).catch(function(e){st(ov,T('eExp')+e,true)})},withTable)}
 window.openAR=openAR=M11open;
+/* oria-124: AR zawsze reaguje na 1 tapnięcie (aar/arb/har/fsar); błąd widoczny zamiast ciszy */
+(function(){var nav=0;window.addEventListener('pagehide',function(){nav=1});document.addEventListener('click',function(e){var t=e.target.closest&&e.target.closest('#aar,#arb,#har');if(!t)return;nav=0;setTimeout(function(){if(nav||document.getElementById('ar')||document.hidden)return;try{M11open(false)}catch(x){alert('AR: '+(x&&x.message||x))}},400)},true);
+window.addEventListener('error',function(e){if(document.getElementById('ar')&&!document.getElementById('ar').__errShown){try{var s=document.querySelector('#ar .m11st');if(s){s.textContent='AR: '+e.message;s.style.color='#ef4444'}}catch(x){}}})})();
 /* v88: USDZ liczony wcześniej, w wolnej chwili (nie w momencie dotknięcia); render 3D wstrzymany, gdy otwarte okno AR */
 function __arKey(){try{var g=R3.grp;if(!g)return '';var b=new THREE.Box3().setFromObject(g);var hh=2166136261,nm=0;g.updateMatrixWorld(true);g.traverse(function(o){if(!o.isMesh||!o.geometry)return;nm++;var a=o.geometry.attributes.position,ix=o.geometry.index,e=o.matrixWorld.elements;if(!a)return;var st=Math.max(1,Math.floor(a.count/4096));hh=Math.imul(hh^a.count,16777619);hh=Math.imul(hh^(ix?ix.count:0),16777619);for(var i=0;i<16;i++)hh=Math.imul(hh^Math.round(e[i]*1000),16777619);for(var i=0;i<a.count;i+=st){hh=Math.imul(hh^Math.round(a.getX(i)*100),16777619);hh=Math.imul(hh^Math.round(a.getY(i)*100),16777619);hh=Math.imul(hh^Math.round(a.getZ(i)*100),16777619)}});/* v90a: klucz zawiera hash geometrii (wycięcia) */
 return g.uuid+':'+g.children.length+':'+[b.min.x,b.min.y,b.min.z,b.max.x,b.max.y,b.max.z].map(function(v){return Math.round(v)}).join(',')+':'+nm+':'+(hh>>>0).toString(36)}catch(e){return ''}}
@@ -3388,7 +3391,7 @@ var RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches
 function lang(){return window.AR_LANG?AR_LANG():'pl'}
 window.__arPlane=function(ov){if(ov)ov.classList.remove('arNoPlane');var x=document.getElementById('arxo');if(x)x.classList.remove('nop')};
 function overlayXR(){var o=document.getElementById('arxo');if(!o){o=document.createElement('div');o.id='arxo';o.innerHTML='<div class="arxf"></div><div class="arxc" id="arxc"></div><div class="arxs" id="arxs"></div><button id="arxq" aria-label="close">✕</button>';document.body.appendChild(o)}
- o.className='nop';o.style.display='block';o.querySelector('#arxc').textContent=TT('hold',lang());o.querySelector('#arxs').textContent=TT('find',lang());return o}
+ o.className='';o.style.display='block';o.querySelector('#arxc').textContent=TT('hold',lang());o.querySelector('#arxs').textContent=TT('find',lang());return o}
 window.__arOverlayXR=overlayXR;
 /* sesja: getModel = świeży arGroup (mm→m, pivot dół-środek) */
 window.__arXRgo=function(ov,withTable){var o=overlayXR(),L=lang();
@@ -3397,7 +3400,7 @@ window.__arXRgo=function(ov,withTable){var o=overlayXR(),L=lang();
   var sc=new THREE.Scene();sc.add(new THREE.HemisphereLight(0xffffff,0x444444,1.2));var dl=new THREE.DirectionalLight(0xffffff,.8);dl.position.set(1,2,1);sc.add(dl);var cam=new THREE.PerspectiveCamera();
   return Promise.resolve(rd.xr.setSession(s)).then(function(){return s.requestReferenceSpace('viewer')}).then(function(vs){
    rd.setAnimationLoop(function(){rd.render(sc,cam)});var c=o.querySelector('#arxc');
-   return new Promise(function(res){var n=window.AR_CD_S||6;o.setAttribute('data-step','cd');c.classList.add('arcd');(function tk(){if(n<=0){c.classList.remove('arcd');return res()}c.textContent=window.AR_CD?AR_CD(L,n):n;o.setAttribute('data-n',n);window.__cdN=n;n--;setTimeout(tk,1000)})()}).then(function(){
+   return new Promise(function(res){var n=window.AR_CD_S||0;o.setAttribute('data-step','cd');c.classList.add('arcd');(function tk(){if(n<=0){c.classList.remove('arcd');return res()}c.textContent=window.AR_CD?AR_CD(L,n):n;o.setAttribute('data-n',n);window.__cdN=n;n--;setTimeout(tk,1000)})()}).then(function(){
    var f=startARFlow({session:s,refSpace:rd.xr.getReferenceSpace(),viewerSpace:vs,scene:sc,lang:L,still:RM,getModel:function(){return arGroup(withTable)},
     onStep:function(k,t){if(t)c.textContent=t;o.setAttribute('data-step',k)},onPlane:function(){window.__arPlane(ov)}});
    window.__arXR={flow:f,session:s};
