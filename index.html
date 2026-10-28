@@ -391,6 +391,7 @@ details.wkl summary{color:#b8c4d0;cursor:pointer;padding:8px 0}
 .kbadge{display:flex;align-items:baseline;gap:8px;margin:4px 0 8px}.kbadge .cls{font-size:17px;font-weight:700;color:#e2e8f0}.kbadge small,.aconf2{color:#b8c4d0}
 html.light .kbadge .cls{color:#0f172a}
 header #patchip{margin-left:6px;flex:none;pointer-events:none}
+/* oria-128: G0 chip wariant B (neutral + kropka cyan) */#patchip{background:transparent!important;color:#b8c4d0!important;border-color:rgba(184,196,208,.45)!important;display:inline-flex!important;align-items:center;gap:5px}#patchip::before{content:"";width:5px;height:5px;border-radius:50%;background:#22d3ee;flex:none}
 </style>
 </head>
 <body><div id="langsel" hidden><div class="lwrap"><div class="ltitle">WYBIERZ JĘZYK<span>CHOOSE LANGUAGE · SPRACHE WÄHLEN</span></div><div class="flags"><button class="flag" data-lang="en"><span class="fimg"><svg viewBox="0 0 60 60" class="fsvg"><clipPath id="fcen"><circle cx="30" cy="30" r="30"/></clipPath><g clip-path="url(#fcen)"><rect width="60" height="60" fill="#012169"/><path d="M0 0L60 60M60 0L0 60" stroke="#fff" stroke-width="10"/><path d="M0 0L60 60M60 0L0 60" stroke="#C8102E" stroke-width="3.5"/><path d="M30 0V60M0 30H60" stroke="#fff" stroke-width="16"/><path d="M30 0V60M0 30H60" stroke="#C8102E" stroke-width="9"/></g></svg></span><span class="fcode">EN</span><span class="fname">English</span></button><button class="flag" data-lang="pl"><span class="fimg"><svg viewBox="0 0 60 60" class="fsvg"><clipPath id="fcpl"><circle cx="30" cy="30" r="30"/></clipPath><g clip-path="url(#fcpl)"><rect width="60" height="30" fill="#f4f5f7"/><rect y="30" width="60" height="30" fill="#DC143C"/></g></svg></span><span class="fcode">PL</span><span class="fname">Polski</span></button><button class="flag" data-lang="de"><span class="fimg"><svg viewBox="0 0 60 60" class="fsvg"><clipPath id="fcde"><circle cx="30" cy="30" r="30"/></clipPath><g clip-path="url(#fcde)"><rect width="60" height="20" fill="#141414"/><rect y="20" width="60" height="20" fill="#DD0000"/><rect y="40" width="60" height="20" fill="#FFCE00"/></g></svg></span><span class="fcode">DE</span><span class="fname">Deutsch</span></button></div><i class="sline"></i></div></div><div id="splash"><img class="sicon" src="icons/icon-512.png" alt=""><div class="logo">ORIAWELD<sub>SI</sub></div><div class="tag">STEEL. PRECISION. BUILT.</div><i class="sline"></i><div class="sprog"><i></i></div><div class="sload">Ładowanie…</div></div><header><button id="back">‹</button><span class="hlogo">ORIAWELD<sub>SI</sub></span><div id="bar"><div id="prog"></div></div><span id="cnt"></span></header><div id="app"></div><nav id="tabs"><button>📷<span>Skanuj</span></button><button>📄<span>Rysunek</span></button><button>⬡<span>Model</span></button><button>🕘<span>Historia</span></button></nav>
@@ -3226,7 +3227,7 @@ var TX={
   eNoOpen:'Aparat AR się nie otworzył. Pobierz plik AR poniżej i otwórz go ręcznie.',
   eDesk:'AR działa na telefonie (iPhone: Safari, Android: Chrome). Na komputerze możesz pobrać plik AR.',
   eExp:'Nie udało się przygotować pliku AR: ',eMV:'Brak komponentu podglądu AR (model-viewer).',
-  noLbl:'Uwaga: etykiety wymiarów w .usdz są płaskimi obrazkami.',back:'‹',histBk:'Historia projektów',tbl:'ze stołem'},
+  noLbl:'Uwaga: etykiety wymiarów w .usdz są płaskimi obrazkami.',back:'‹',histBk:'Historia projektów',histS:'Historia',cls:'Zamknij',tbl:'ze stołem'},
  en:{title:'AR 1:1',prep:'Preparing AR model…',go:'◎ View in AR',dlU:'⬇ Download AR file (.usdz)',dlG:'⬇ Download AR file (.glb)',
   ready:'Model ready. Tap “View in AR” to open the camera.',launching:'Starting AR camera…',
   eHttps:'AR requires HTTPS. Open the app from an https:// address (or localhost) and try again.',
@@ -3236,7 +3237,7 @@ var TX={
   eNoOpen:'The AR camera did not open. Download the AR file below and open it manually.',
   eDesk:'AR works on a phone (iPhone: Safari, Android: Chrome). On a computer you can download the AR file.',
   eExp:'Could not prepare the AR file: ',eMV:'AR viewer component (model-viewer) missing.',
-  noLbl:'Note: dimension labels in .usdz are flat images.',back:'‹',histBk:'Project history',tbl:'with table'},
+  noLbl:'Note: dimension labels in .usdz are flat images.',back:'‹',histBk:'Project history',histS:'Project history',cls:'Close',tbl:'with table'},
  de:{title:'AR 1:1',prep:'AR-Modell wird vorbereitet…',go:'◎ In AR ansehen',dlU:'⬇ AR-Datei laden (.usdz)',dlG:'⬇ AR-Datei laden (.glb)',
   ready:'Modell bereit. Tippe auf „In AR ansehen“, um die Kamera zu öffnen.',launching:'AR-Kamera wird gestartet…',
   eHttps:'AR erfordert HTTPS. Öffne die App über eine https://-Adresse (oder localhost) und versuche es erneut.',
@@ -3246,7 +3247,7 @@ var TX={
   eNoOpen:'Die AR-Kamera hat sich nicht geöffnet. Lade die AR-Datei unten und öffne sie manuell.',
   eDesk:'AR funktioniert auf dem Telefon (iPhone: Safari, Android: Chrome). Am Computer kannst du die AR-Datei laden.',
   eExp:'AR-Datei konnte nicht erstellt werden: ',eMV:'AR-Viewer-Komponente (model-viewer) fehlt.',
-  noLbl:'Hinweis: Maßbeschriftungen in .usdz sind flache Bilder.',back:'‹',histBk:'Projektverlauf',tbl:'mit Tisch'}};
+  noLbl:'Hinweis: Maßbeschriftungen in .usdz sind flache Bilder.',back:'‹',histBk:'Projektverlauf',histS:'Projektverlauf',cls:'Schließen',tbl:'mit Tisch'}};
 if(window.AR_I18N)['pl','en','de'].forEach(function(l){for(var k in AR_I18N[l])if(!(k in TX[l]))TX[l][k]=AR_I18N[l][k]});/* v90b */
 function T(k){var d=TX[L()]||TX.pl;return d[k]||TX.pl[k]}window.__arT=T;
 var ua=navigator.userAgent;
@@ -3282,7 +3283,7 @@ function arClose(toHist){window.__arSeq++;var ov=document.getElementById('ar');i
  if(toHist&&window.HIST&&HIST.show){try{HIST.show()}catch(e){}try{scrollTo(0,0)}catch(e){}try{location.hash='demo=historia'}catch(e){}}}window.__arClose=arClose;
 addEventListener('pageshow',function(e){if(e.persisted&&document.getElementById('ar'))arClose(false)});
 function overlay(withTable){var ov=document.getElementById('ar');if(ov)arClose(false);window.__arSeq++;ov=document.createElement('div');ov.id='ar';
- ov.innerHTML='<div class="arbar"><button id="arx" aria-label="'+T('histBk')+'">‹</button><span class="pill">📏 '+T('title')+'</span><button id="arHist" type="button">← '+T('histBk')+'</button></div>'+
+ ov.innerHTML='<div class="arbar"><button id="arx" aria-label="'+T('cls')+'">‹</button><span class="pill">📏 '+T('title')+'</span><button id="arHist" type="button" aria-label="'+T('histBk')+'">← '+T('histS')+'</button></div>'+
  '<div id="mvw"></div><div class="m11st" role="status">'+T('prep')+'</div><div id="m11act"></div>'+
  '<label class="arTbl"><input type="checkbox" id="arT"'+(withTable?' checked':'')+'> '+T('tbl')+'</label>'+
  '<div class="m11dl"><button class="main alt" id="du">'+T('dlU')+'</button><button class="main alt" id="dg">'+T('dlG')+'</button></div>'+
@@ -3531,6 +3532,7 @@ addEventListener('appinstalled',close);
 html.m15ios #mnav{opacity:.28;filter:saturate(.3);transition:opacity .3s}
 #mnav button span{font-size:min(11px,2.9vw);letter-spacing:-.01em}
 #ar #arx{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+/* oria-128: AR Historia PL 360 + safe-area (Grafika ar_hist_1805) */#ar .arbar .pill{white-space:nowrap}#ar #arHist{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}#ar{padding-bottom:calc(14px + env(safe-area-inset-bottom))!important}
 #ar .arTbl{display:flex!important;align-items:center;gap:12px;min-height:44px;margin:8px 2px;cursor:pointer;text-align:left}
 #ar .arTbl input{width:22px;height:22px;min-height:0;margin:0;flex:none;accent-color:#22d3ee}
 #ar .m11tab{display:inline-flex!important;align-items:center;min-height:44px;padding:0 4px;margin:0 0 4px!important}
