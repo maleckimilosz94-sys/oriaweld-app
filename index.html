@@ -1797,7 +1797,7 @@ function arGroup(withTable){R3.grp.updateMatrixWorld(true);var bx=new THREE.Box3
   w.position.y=T.H/1000;}
  w.updateMatrixWorld(true);return w;}
 function exportGLB(cb,withTable){var w=arGroup(withTable);new THREE.GLTFExporter().parse(w,function(buf){cb(new Blob([buf],{type:'model/gltf-binary'}),w);},function(e){alert('Eksport GLB nie udał się: '+e)},{binary:true});}
-function exportUSDZ(w){return Promise.resolve(new THREE.USDZExporter().parse(w)).then(function(a){return new Blob([a],{type:'model/vnd.usdz+zip'});});}
+function exportUSDZ(w){return new Promise(function(res,rej){try{var n=0;if(w)w.traverse(function(o){if(o.isMesh)n++});if(!n)return rej(new Error('Brak geometrii 3D do AR'));var out=new THREE.USDZExporter().parse(w);Promise.resolve(out).then(function(a){res(new Blob([a],{type:'model/vnd.usdz+zip'}))}).catch(rej)}catch(e){rej(e)}})}
 window.__arTest=function(t){return new Promise(function(r){exportGLB(function(b,w){exportUSDZ(w).then(function(u){var f=new FileReader();f.onload=function(){r({usdz:f.result,glb:b.size})};f.readAsDataURL(u);});},t);});};
 function dl(blob,name){var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();a.remove();}
 var IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform=='MacIntel'&&navigator.maxTouchPoints>1);
@@ -2716,7 +2716,7 @@ var HIST=(function(){
     kind:m.kind,kindName:KINDS[m.kind]||m.kind,size:m.size.map(Math.round),how:m.pick&&m.pick.how||'',build:m.pick&&m.pick.name||'',conf:m.conf,viou:m.viou,
     parts:(m.geo.userData&&m.geo.userData.partsList)||[],dims:dims(m),manual:(m.manual||[]).map(function(x){return x.value}),mmpx:m.mmpx,scale:m.scaleSrc||'',
     thumb:m.__hthumb||(m.info&&m.info.sheet?thumb(m.info.sheet,240):null),mthumb:mt,pos:new Float32Array(P.array),col:C?new Float32Array(C.array):null};if(m.__hparent){rec.parent=m.__hparent;rec.version=m.__hver||2;rec.issues=m.__hissues||[];rec.note=m.__hnote||'';rec.diff=m.__hdiff||[];}try{var su=m.info&&m.info.dataUrl;if(su&&su.length<6e6)rec.src=su;}catch(e){}if(window.AUTO&&AUTO.mem)AUTO.mem[rec.id]=m;
-   m.__hthumb=rec.thumb;get(rec.id).then(function(o){if(o&&o.name)rec.name=o.name;m.__hname=rec.name;return put(rec);}).catch(function(e){window.__histErr=String(e)});},400);}catch(e){window.__histErr=String(e);}}
+   m.__hthumb=rec.thumb;get(rec.id).then(function(o){if(o&&o.name)rec.name=o.name;m.__hname=rec.name;return put(rec);}).catch(function(e){window.__histErr=String(e);try{if(!window.__histErrAlerted){window.__histErrAlerted=1;alert('Nie udało się zapisać projektu w Historii (za mało pamięci na telefonie?). '+(e&&e.message||e))}}catch(x){}});},400);}catch(e){window.__histErr=String(e);}}
  function saveAsm(A,k){try{if(!window.indexedDB||!A||!A.geo)return;var g=A.geo.index?A.geo.toNonIndexed():A.geo,P=g.attributes.position,C=g.attributes.color;if(!A.__hid){A.__hid='a'+Date.now()+'_'+Math.floor(Math.random()*1e6);A.__hdate=Date.now();}
   setTimeout(function(){var mt=null;try{var cv=document.querySelector('#view canvas');if(cv)mt=thumb(cv,320);}catch(e){}var sz=A.size.map(Math.round),dd=[];(A.items||[]).forEach(function(i){if(i.dlugosc>0)dd.push({v:i.dlugosc,st:'g'});});
    var rec={id:A.__hid,date:A.__hdate,upd:Date.now(),name:'Złożenie '+sz.join('×'),kind:k,kindName:(KINDS[k]||k)+' – złożenie z listy części',size:sz,how:A.main&&A.main.p?(A.main.p.txt+' L='+(A.main.dlugosc||'?')):'złożenie z listy części',
@@ -2740,13 +2740,14 @@ var HIST=(function(){
   '<div class="card small"><b>Wymiary z rysunku ('+r.dims.length+')</b><div class="kchips">'+r.dims.map(function(d){return '<span class="kchip hd'+(d.st=='b'?' hman':d.st=='o'?' hunc':'')+'">'+d.v+(d.st=='b'?' ✎':d.st=='o'?' ?':'')+'</span>'}).join('')+'</div><small>✎ = poprawione / wpisane przez Ciebie, ? = niepewne</small></div>'+
   (r.thumb?'<div class="card small"><b>Rysunek</b><img src="'+r.thumb+'" style="width:100%;margin-top:6px;border-radius:8px"></div>':'')+
   '<button class="main orange" id="har">◎ Zobacz w AR</button><button class="main alt" id="hren">✎ Zmień nazwę</button><button class="main alt" id="hdel" style="color:#dc2626">🗑 Usuń projekt</button><button class="main" id="hback">‹ Wróć do historii</button>';
-  var g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(r.pos,3));if(r.col)g.setAttribute('color',new THREE.BufferAttribute(r.col,3));g.computeVertexNormals();
+  if(!r||!r.pos||!r.pos.length){var hb=document.getElementById('hback');if(hb)hb.onclick=show;var he=document.createElement('p');he.className='camErr';he.textContent='Nie mogę odtworzyć tego projektu – brak zapisanego modelu 3D. Zrób skan jeszcze raz.';app.appendChild(he);return;}try{var g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.BufferAttribute(r.pos,3));if(r.col)g.setAttribute('color',new THREE.BufferAttribute(r.col,3));g.computeVertexNormals();
   var el=document.getElementById('view'),W=el.clientWidth||360,H=Math.round(W*0.75),ren=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});ren.setSize(W,H);ren.setPixelRatio(window.devicePixelRatio||1);el.appendChild(ren.domElement);try{new ResizeObserver(function(){var w=el.clientWidth;if(!w||Math.abs(w-parseFloat(ren.domElement.style.width))<1)return;var h=Math.round(w*H/W);ren.setSize(w,h);if(typeof cam!='undefined'&&cam){cam.aspect=w/h;cam.updateProjectionMatrix();}}).observe(el);}catch(e){}
   var sc=new THREE.Scene();sc.background=new THREE.Color(0);arStage(ren,sc);sc.add(new THREE.HemisphereLight(0xffffff,0x000000,0.15));var dl=new THREE.DirectionalLight(0xffffff,0.7);dl.position.set(1,2,1.5);sc.add(dl);
   var top=arTable({L:2000,B:1000,H:900},sc);
   var grp=new THREE.Group();grp.add(new THREE.Mesh(g,arMat(r.col?0xffffff:ARG,{vertexColors:!!r.col})));sc.add(grp);R3={grp:grp};var flat=r.kind=='plate'&&r.size[2]<0.2*Math.min(r.size[0],r.size[1]);if(flat){grp.rotation.x=-Math.PI/2;grp.position.set(0,r.size[2]/2,r.size[1]/2);}
   var s=r.size,D=Math.max(s[0],s[1],s[2])*1.6,cam=new THREE.PerspectiveCamera(45,W/H,1,1e6);g.computeBoundingBox();var tc=new THREE.Vector3();g.boundingBox.getCenter(tc);cam.position.set(tc.x+D*0.55,tc.y-s[1]/2+D*0.6,tc.z+D*0.85);if(flat){tc.set(0,r.size[2]/2,0);cam.position.set(D*0.45,D*0.7,D*0.75);}var oc=new THREE.OrbitControls(cam,ren.domElement);oc.target.copy(tc);oc.update();
   try{if(typeof grp!='undefined')arDecor(grp,sc);}catch(e){}(function loop(){if(!document.body.contains(ren.domElement)){ren.dispose();return;}arRender(ren,sc,cam);requestAnimationFrame(loop);})();
+  }catch(errOpen){var pe=document.createElement('p');pe.className='camErr';pe.textContent='Nie mogę odtworzyć projektu: '+(errOpen&&errOpen.message||errOpen);app.appendChild(pe);}
   document.getElementById('har').onclick=function(){openAR(false)};document.getElementById('hback').onclick=show;
   document.getElementById('hren').onclick=function(){var n=prompt('Nowa nazwa projektu:',r.name);if(n==null)return;n=n.trim();if(!n)return;r.name=n;put(r).then(function(){document.getElementById('hname').textContent=n;if(AUTO.last&&AUTO.last.__hid==r.id)AUTO.last.__hname=n;});};
   document.getElementById('hdel').onclick=function(){if(!confirm('Usunąć projekt „'+r.name+'”? Tego nie da się cofnąć.'))return;del(r.id).then(show);};
@@ -3288,6 +3289,8 @@ function overlay(withTable){var ov=document.getElementById('ar');if(ov)arClose(f
  '<p class="m11env">'+[ENV.ios?'iOS':ENV.android?'Android':'desktop',ENV.https?'HTTPS':'HTTP',ENV.standalone?'PWA':'browser','QL:'+(ENV.qlook?'tak':'nie'),'WebXR:'+(ENV.webxr?'tak':'nie'),'SW:'+(ENV.sw?'tak':'nie')].join(' · ')+'</p>';
  document.body.appendChild(ov);ov.querySelector('#arx').onclick=function(){arClose(false)};ov.querySelector('#arHist').onclick=function(){arClose(true)};ov.__seq=window.__arSeq;ov.querySelector('#arT').onchange=function(){openAR(this.checked)};return ov}
 function M11open(withTable){
+ /* oria-127: nowe≠demo – brak siatki = czytelny błąd; status eksportu */
+ try{var _demoAR={"p1792730002810_617008":1,"p1792730062141_429423":1,"p1792730092210_994554":1,"p1792730343735_882047":1,"p1792730088013_521978":1,"p1792730277882_175983":1,"p1792731129150_336551":1};var _nM=0;if(window.R3&&R3.grp)R3.grp.traverse(function(o){if(o.isMesh)_nM++});if(!_nM&&!(_demoAR[window.__histId]&&document.getElementById('hname'))){var msg=({en:'No 3D model for AR. Open the project again from History.',de:'Kein 3D-Modell für AR. Erneut aus dem Verlauf öffnen.'}[L()]||'Brak modelu 3D do AR. Otwórz projekt ponownie z Historii.');try{alert(msg)}catch(e){}return}}catch(e){}
  /* oria-126: iOS PWA – Quick Look w aplikacji nic nie robi; share / karta Safari. Safari: live.html auto. */
  if(ENV.ios&&!withTable){var hid=({"p1792730002810_617008":"d1","p1792730062141_429423":"d2","p1792730092210_994554":"d3","p1792730343735_882047":"d4","p1792730088013_521978":"d5","p1792730277882_175983":"d6","p1792731129150_336551":"d7"})[window.__histId];
   if(hid&&document.getElementById('hname')){var du='ar/live.html?f='+hid+'&v='+Date.now()+'&lang='+L();if(ENV.standalone){try{window.open(du,'_blank','noopener')}catch(e){location.href=du}return}location.href=du;return}
@@ -3307,7 +3310,7 @@ function M11open(withTable){
    if(ENV.standalone&&ok){setTimeout(function(){try{navigator.share({files:[file]})}catch(e){}},280)}
    else if(!ENV.standalone&&abs&&ENV.qlook){setTimeout(function(){var a=act.querySelector('#arQL');try{a&&a.click()}catch(e){}},200)}
   }
-  __arGet(false,function(glb,w,usdzP){if(!live(ov0))return;usdzP.then(function(ub){if(!live(ov0))throw 0;window.__arLast={glb:glb,usdz:ub};return sameOrigin(ub,'live.usdz')}).then(function(u){
+  __arGet(false,function(glb,w,usdzP){if(!live(ov0))return;st(ov0,({en:'Building AR file…',de:'AR-Datei wird erzeugt…'})[L()]||'Buduję plik AR…');usdzP.then(function(ub){if(!live(ov0))throw 0;window.__arLast={glb:glb,usdz:ub};st(ov0,({en:'Saving for Quick Look…',de:'Speichern für Quick Look…'})[L()]||'Zapisuję do podglądu AR…');return sameOrigin(ub,'live.usdz')}).then(function(u){
     if(!live(ov0))return;
     /* PWA: auto live.html+rel=ar nic nie otwiera – share/Safari. Safari: live.html auto OK gdy cache jest. */
     if(ENV.standalone||!u){iosReady(ov0,u);return}
