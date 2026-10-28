@@ -77,7 +77,7 @@ function dp(P,eps){if(P.length<3)return P.slice();const keep=new Uint8Array(P.le
 // zamknięta pętla: podziel na dwie połowy (najdalszy punkt od startu), żeby DP nie zjadł pętli
 function simplifyLoop(P,eps){if(P.length<4)return P;let f=0,md=0;for(let i=1;i<P.length;i++){const d=Math.hypot(P[i][0]-P[0][0],P[i][1]-P[0][1]);if(d>md){md=d;f=i;}}
   const A=dp(P.slice(0,f+1),eps),B=dp(P.slice(f).concat([P[0]]),eps);return A.concat(B.slice(1,-1));}
-function loops(W,H,geo){
+function loops(W,H,geo,CL=false){
   const w=Math.ceil(W*S)+2,h=Math.ceil(H*S)+2;const g=new Uint8Array(w*h);
   const plot=(x,y)=>{for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=x+dx,Y=y+dy;if(X>=0&&Y>=0&&X<w&&Y<h)g[Y*w+X]=1;}};
   const segs=[];
@@ -111,6 +111,16 @@ function loops(W,H,geo){
     const inF=(x,y)=>x>=r.x0&&y>=r.y0&&x<=r.x1&&y<=r.y1&&lab[y*w+x]!==ob;
     const raw=trace(inF,r.x0,sy,8*((r.x1-r.x0)+(r.y1-r.y0)+4));if(raw.length<4)return null;
     const P=simplifyLoop(raw,0.6*S).map(([x,y])=>[+(x/S).toFixed(2),+(y/S).toFixed(2)]);return P.length>=3?P:null;};
+  // CENTERLINE: wierzchołek śladu pikselowego (zewn. brzeg kreski) -> najbliższy koniec odcinka wektorowego (oś kreski), r<=1.5pt
+  const EP=[];for(const [a,b] of segs){EP.push(a,b);}
+  const G={};const key=(x,y)=>Math.floor(x/2)+','+Math.floor(y/2);for(const p of EP)(G[key(p[0],p[1])]=G[key(p[0],p[1])]||[]).push(p);
+  const snapPoly=P=>{if(!P)return P;let n=0;const Q=P.map(([x,y])=>{let best=null,bd=1.5;const gx=Math.floor(x/2),gy=Math.floor(y/2);
+      for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++)for(const p of (G[(gx+i)+','+(gy+j)]||[])){const d=Math.hypot(p[0]-x,p[1]-y);if(d<bd){bd=d;best=p;}}
+      if(best){n++;return [+best[0].toFixed(2),+best[1].toFixed(2)];}return [x,y];});
+    const D=[];for(const p of Q)if(!D.length||Math.hypot(p[0]-D[D.length-1][0],p[1]-D[D.length-1][1])>0.05)D.push(p);
+    D.snapped=n;return D.length>=3?D:P;};
+  const bbP=P=>{const xs=P.map(p=>p[0]),ys=P.map(p=>p[1]);const x0=Math.min(...xs),y0=Math.min(...ys);return [+x0.toFixed(2),+y0.toFixed(2),+(Math.max(...xs)-x0).toFixed(2),+(Math.max(...ys)-y0).toFixed(2)];};
+  const clObj=o=>{if(!o.poly)return o;const c=snapPoly(o.poly);o.poly_raw=o.poly;o.poly=c;o.bbox_raw=o.bbox;o.bbox=bbP(c);o.area_pt2=+polyArea(c).toFixed(2);o.centerline=(c.snapped||0)+'/'+o.poly_raw.length;return o;};
   const views=[];
   for(const i of inks){if(parent[i]!==-1)continue;const r=reg[i];const A=FA(i);if(A<(20*S)**2)continue;
     const holes=[],windows=[];
@@ -119,7 +129,8 @@ function loops(W,H,geo){
       const o={bbox:[R.x0/S,R.y0/S,bw/S,bh/S],area_pt2:a/S/S,poly:loopPoly(k)};(round||a<=0.01*A?holes:windows).push(o);}
     const bb=[r.x0/S,r.y0/S,(r.x1-r.x0)/S,(r.y1-r.y0)/S];
     let tl=0,nl=0;for(const [a,b] of segs){const mx=(a[0]+b[0])/2,my=(a[1]+b[1])/2;if(mx<bb[0]||my<bb[1]||mx>bb[0]+bb[2]||my>bb[1]+bb[3])continue;const L=Math.hypot(b[0]-a[0],b[1]-a[1]);const an=Math.abs(Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI)%90;tl+=L;if(an>5&&an<85&&L>2)nl+=L;}
-    views.push({bbox:bb,outline:{bbox:bb,area_pt2:A/S/S,poly:loopPoly(i)},holes,windows,non_ortho:tl?+(nl/tl).toFixed(2):0,iso:tl>0&&nl/tl>0.35});}
+    const ol={bbox:bb,area_pt2:A/S/S,poly:loopPoly(i)};if(CL){clObj(ol);holes.forEach(clObj);windows.forEach(clObj);}
+    views.push({bbox:ol.bbox,outline:ol,holes,windows,non_ortho:tl?+(nl/tl).toFixed(2):0,iso:tl>0&&nl/tl>0.35});}
   return views;
 }
 
@@ -147,8 +158,8 @@ function textMeta(P,view){
 async function pdfVector(data,opts={}){
   const on=opts.pdfVec===true||(typeof window!=='undefined'&&window.__pdfVec===true);
   if(!on)return null;
-  const pdfjs=opts.pdfjs||await import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.min.mjs');
-  const P=await extractStrokes(pdfjs,data);const C=classify(P);const views=loops(P.W,P.H,C.geo);
+  const pdfjs=opts.pdfjs||await import('pdfjs-dist/legacy/build/pdf.mjs');
+  const P=await extractStrokes(pdfjs,data);const C=classify(P);const views=loops(P.W,P.H,C.geo,opts.centerline!==false);
   const main=views.filter(v=>!v.iso);
   const mv=main.filter(v=>v.windows.length+v.holes.length>0).sort((a,b)=>(b.windows.length+b.holes.length)-(a.windows.length+a.holes.length)||b.outline.area_pt2-a.outline.area_pt2)[0]||main[0];
   return {meta:textMeta(P,mv),views,geo_width:C.gw,width_lengths:C.tot,fallback:C.fallback,title_block:C.TB,
