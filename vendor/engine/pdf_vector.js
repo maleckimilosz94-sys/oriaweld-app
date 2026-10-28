@@ -9,6 +9,7 @@ function mul(a,b){return [a[0]*b[0]+a[1]*b[2],a[0]*b[1]+a[1]*b[3],a[2]*b[0]+a[3]
 function ap(m,x,y){return [m[0]*x+m[2]*y+m[4],m[1]*x+m[3]*y+m[5]];}
 
 async function extractStrokes(pdfjs,data){
+  try{const G=pdfjs.GlobalWorkerOptions;if(G&&!G.workerSrc&&typeof window!=='undefined'&&typeof process==='undefined')G.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs';}catch(e){}
   const doc=await pdfjs.getDocument({data,isEvalSupported:false}).promise;const page=await doc.getPage(1);
   const vp=page.getViewport({scale:1});const O=pdfjs.OPS;const ops=await page.getOperatorList();
   // vp.transform: PDF -> układ ekranowy (y w dół), w pt
