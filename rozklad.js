@@ -75,6 +75,6 @@ function open(){if(!window.R3||!R3.grp){alert(T('rzNoModel'));return}if(document
  RZ.close=close;$('rzX').onclick=close;ui();RZ.st.ready=true}
 function close(){if(RZ.st&&RZ.close!==close)RZ.close()}
 /* przycisk obok „Zobacz w AR” w widokach wyniku 3D */
-function inject(){['aar','arb'].forEach(function(id){var b=document.getElementById(id);if(!b||b.dataset.rz)return;b.dataset.rz=1;var n=document.createElement('button');n.className=(b.className||'main')+' alt rzopen';n.id='rzOpen';n.type='button';n.textContent=T('rzBtn');n.onclick=open;b.insertAdjacentElement('afterend',n)})}
+function inject(){['aar','arb','har'].forEach(function(id){var b=document.getElementById(id);if(!b||b.dataset.rz)return;b.dataset.rz=1;var n=document.createElement('button');n.className=(b.className||'main')+' alt rzopen';n.id='rzOpen';n.type='button';n.textContent=T('rzBtn');n.onclick=open;b.insertAdjacentElement('afterend',n)})}
 new MutationObserver(inject).observe(document.documentElement,{childList:true,subtree:true});inject();
 })();

@@ -22,6 +22,7 @@
 !/rozklad.js
 !/rozklad.css
 !/dzwieki.js
+!/p1_filters.js
 historia_pakiet*
 deploy_response*
 *.orig
