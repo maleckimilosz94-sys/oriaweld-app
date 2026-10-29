@@ -44,7 +44,7 @@ export function buildSheetG0(input, opts={}){
 }
 // Adapter pod przyszłe wpięcie (window.SheetG0Cand(m)) – rejestrowany TYLKO gdy ktoś jawnie zawoła registerSheetG0().
 export function registerSheetG0(win=globalThis){
-  win.SheetG0Cand=function(m,o={}){ const v=(m.views||[]).filter(v=>v.outlinePolygon&&v.holes&&v.holes.length).sort((a,b)=>b.holes.length-a.holes.length)[0];
+  win.SheetG0Cand=function(m,o={}){ const v=(m.views||[]).filter(v=>v.outlinePolygon&&v.holes&&(v.holes.length||(win.__b2PdfForce===true&&v.outlinePolygon.length>=3))).sort((a,b)=>b.holes.length-a.holes.length)[0];
     if(!v) return null; const d=buildSheetG0({outline:v.outlinePolygon,holes:v.holes,thicknessMm:m.thicknessMm,widthMm:o.widthMm});
     return {id:'sheetG0',label:'blacha z obrysu',geom:d.geometry,score:0.9,why:['G0: '+d.holes.length+' otwory']}; };
   win.PdfVecToG0=r=>pdfVecToG0View(r);
@@ -56,8 +56,9 @@ const rectP=([x,y,w,h])=>[[x,y],[x+w,y],[x+w,y+h],[x,y+h]];
 const circP=([x,y,w,h],n=16)=>{const cx=x+w/2,cy=y+h/2;return Array.from({length:n},(_,i)=>[cx+w/2*Math.cos(2*Math.PI*i/n),cy+h/2*Math.sin(2*Math.PI*i/n)]);};
 export function pdfVecToG0View(res){
   if(!res||!res.views) return null;
-  const v=res.views.filter(v=>!v.iso&&((v.windows||[]).length+(v.holes||[]).length)>0)
+  let v=res.views.filter(v=>!v.iso&&((v.windows||[]).length+(v.holes||[]).length)>0)
     .sort((a,b)=>(b.windows.length+b.holes.length)-(a.windows.length+a.holes.length)||b.outline.area_pt2-a.outline.area_pt2)[0];
+  if(!v&&typeof window!=='undefined'&&window.__b2PdfForce===true){const c=res.views.filter(x=>!x.iso&&x.b2iso);if(c.length===1)v=c[0];}
   if(!v) return null;
   // pętle z pdf_vector (poly, pt) gdy są; fallback: bbox-prostokąt / 16-kąt
   const ok=p=>Array.isArray(p)&&p.length>=3;

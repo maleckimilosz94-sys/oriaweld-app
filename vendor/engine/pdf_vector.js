@@ -144,6 +144,11 @@ function textMeta(P,view){
   const bw=view.bbox[2],bh=view.bbox[3],bL=Math.max(bw,bh),bW=Math.min(bw,bh);let best=null;
   for(const a of nums)for(const b of nums){if(b>=a||b<5)continue;if(Math.abs((a/b)/(bL/bW)-1)<0.05){const sc=a/bL;if(!best||a>best[0])best=[a,b,sc];}}
   if(best){out.mmPerPt=best[2];out.scaleSrc='wymiary '+best[0]+' x '+best[1]+' (x'+best[2].toFixed(3)+' mm/pt)';}
+  // B2d (flaga OFF): para wymiarów daje skalę nienormową, a tabliczka ma normową skalę potwierdzoną dokładnym wymiarem (≤0,5%) na bbox i bliską parze (≤5%) -> bierz tabliczkę.
+  if(best&&typeof window!=='undefined'&&window.__b2PdfForce===true){const ST=[0.5,1,2,2.5,4,5,10];const isStd=x=>ST.some(k=>Math.abs(x/(25.4/72)/k-1)<=0.01);
+    const tb=T.map(t=>/^(\d+(?:[.,]\d+)?)\s*:\s*(\d+(?:[.,]\d+)?)$/.exec(t.s.trim().split(/\s+/).pop())).find(m=>m&&num(m[1])>0&&num(m[2])>0);
+    if(!isStd(best[2])&&tb){const k=25.4/72*num(tb[2])/num(tb[1]);const hit=nums.find(n=>Math.abs(n/(bW*k)-1)<=0.005||Math.abs(n/(bL*k)-1)<=0.005);
+      if(isStd(k)&&hit&&Math.abs(best[2]/k-1)<=0.05){out.mmPerPt=k;out.scaleSrc='wymiary: skala z tabliczki '+tb[1]+':'+tb[2]+' potw. wymiarem '+hit+' (x'+k.toFixed(3)+' mm/pt)';console.log('b2d: '+out.scaleSrc+' zamiast pary '+best[0]+'x'+best[1]);}}}
   else{const sc=T.map(t=>/^(\d+(?:[.,]\d+)?)\s*:\s*(\d+(?:[.,]\d+)?)$/.exec(t.s.trim().split(/\s+/).pop())).find(m=>m&&num(m[1])>0&&num(m[2])>0);
     if(sc&&num(sc[1])/num(sc[2])!==1){out.mmPerPt=25.4/72*num(sc[2])/num(sc[1]);out.scaleSrc='skala z tabliczki '+sc[1]+':'+sc[2]+' (SREDNIA)';}}
   const H=P.H;const tbY=Math.min(...T.filter(t=>/^(Weight|Material|Gewicht|Masse)$/.test(t.s)).map(t=>t.y),H);
@@ -178,6 +183,9 @@ async function pdfVector(data,opts={}){
   if(!on)return null;
   const pdfjs=opts.pdfjs||await import((typeof window!=='undefined'&&typeof process==='undefined')?'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.min.mjs':'pdfjs-dist/legacy/build/pdf.mjs');
   const P=await extractStrokes(pdfjs,data);const C=classify(P);const views=loops(P.W,P.H,C.geo,opts.centerline!==false);
+  // B2c (flaga OFF window.__b2PdfForce): jedyny rzut z ukośnymi krawędziami brany za iso; odzysk tylko gdy para wymiarów pasuje do bbox ORAZ skala jest normowa (±1%).
+  if(typeof window!=='undefined'&&window.__b2PdfForce===true&&views.length===1&&views[0].iso){const tm=textMeta(P,views[0]);const q=/\(x([0-9.]+) mm\/pt\)/.exec(tm.scaleSrc||'');const r=q?parseFloat(q[1])/(25.4/72):0;
+    if(/^wymiary/.test(tm.scaleSrc)&&[0.5,1,2,2.5,4,5,10].some(k=>Math.abs(r/k-1)<=0.01)){views[0].iso=false;views[0].b2iso=true;console.log('b2c: jedyny rzut odzyskany z iso ('+tm.scaleSrc+')');}}
   const main=views.filter(v=>!v.iso);
   const mv=main.filter(v=>v.windows.length+v.holes.length>0).sort((a,b)=>(b.windows.length+b.holes.length)-(a.windows.length+a.holes.length)||b.outline.area_pt2-a.outline.area_pt2)[0]||main[0];
   const meta=textMeta(P,mv);if(opts.bends!==false)for(const v of views){const sp=sideProfile(v,meta.mmPerPt);if(sp)v.profile=sp;}
