@@ -1,3 +1,4 @@
+try{window.__dimFitGuard=new URLSearchParams(location.search).get('dfg')!=='0'}catch(e){}
 /* SI: wtyczka "Wsparcie SI" (gałąź test/p2-checkpoint). Flaga window.__siAssist <- localStorage oria_si_assist (domyślnie ON na teście). */
 (function(){
 var K='oria_si_assist';
@@ -58,6 +59,7 @@ window.siAssist={
    if(!t)return;var f=t/a.s;axes.push({axis:a.i,name:NM[a.i],model:Math.round(a.s),dim:t,f:+f.toFixed(2)});if(Math.abs(f-1)>TH&&(r==0||Math.abs(f-1)>0.5)){factors[a.i]=+f.toFixed(3);bad.push(a.i)}});
   if(bad.indexOf(ax[0].i)<0)return null; /* liczy się gabaryt – reszta tylko gdy główna oś też nie pasuje */
   var A=axes.filter(function(a){return bad.indexOf(a.axis)>=0});
+  if(window.__dimFitGuard===true&&m.kind==='plate'&&A.length==1&&(A[0].f>1.5||A[0].f<1/1.5)){m.__dimFitGuarded=A[0];console.log('si: dimFitGuard – plate, jedna oś ×'+A[0].f+' – bez Dopasuj');return null}
   return {axes:A,factors:factors,maxDim:N[0],maxModel:Math.round(ax[0].s),
    msg:tx('mod')+' '+A.map(function(a){return tx(a.name)+' '+a.model+' mm'}).join(', ')+' – '+tx('fr')+': '+A.map(function(a){return a.dim+' mm'}).join(', ')+' (×'+A.map(function(a){return a.f}).join(', ×')+').'}}
 };

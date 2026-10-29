@@ -189,6 +189,12 @@ async function pdfVector(data,opts={}){
   const main=views.filter(v=>!v.iso);
   const mv=main.filter(v=>v.windows.length+v.holes.length>0).sort((a,b)=>(b.windows.length+b.holes.length)-(a.windows.length+a.holes.length)||b.outline.area_pt2-a.outline.area_pt2)[0]||main[0];
   const meta=textMeta(P,mv);if(opts.bends!==false)for(const v of views){const sp=sideProfile(v,meta.mmPerPt);if(sp)v.profile=sp;}
+  // B2e (flaga OFF window.__b2ePdf): płyta W×H×t tylko z rysunku. Rzut płyty = największy rzut nie-iso; W,H (×skala) muszą trafić w wymiary ≤1%;
+  // t = szerokość paska innego rzutu nie-iso (profil 'plaski') trafiająca w wymiar ≤3%. Brak trafienia = nic nie zmieniamy.
+  if(typeof window!=='undefined'&&window.__b2ePdf===true&&/^brak danych/.test(meta.thkSrc)&&/^wymiary/.test(meta.scaleSrc)){const dn=[...new Set((P.text||[]).filter(t=>NUM.test(t.s)).map(t=>num(t.s)))].filter(n=>n>0);const k=meta.mmPerPt;
+    const nz=views.filter(v=>!v.iso).sort((a,b)=>b.bbox[2]*b.bbox[3]-a.bbox[2]*a.bbox[3]);const pv=nz[0];const snap=x=>dn.find(n=>Math.abs(x/n-1)<=0.01);
+    if(pv&&!pv.profile){const W=snap(pv.bbox[2]*k),H=snap(pv.bbox[3]*k);const hits=[];for(const v of nz.slice(1)){if(v.profile&&v.profile.type==='plaski'){const h=dn.find(n=>Math.abs(v.profile.t_mm/n-1)<=0.03);if(h)hits.push(h);}}
+      if(W&&H&&hits.length&&hits.every(h=>h===hits[0])&&hits[0]<Math.min(W,H)/5){meta.thicknessMm=hits[0];meta.thkConf='WYSOKA';meta.thkSrc='b2e: pasek rzutu bocznego = wymiar '+hits[0];meta.b2ePlate=[Math.max(W,H),Math.min(W,H),hits[0]];console.log('b2e: płyta '+meta.b2ePlate.join('x'));}}}
   const prof=views.map(v=>v.profile).filter(p=>p&&p.bends>0).sort((a,b)=>b.bends-a.bends)[0]||null;
   return {meta,side_bends:prof,views,geo_width:C.gw,width_lengths:C.tot,fallback:C.fallback,title_block:C.TB,
     dim_nums:[...new Set((P.text||[]).filter(t=>NUM.test(t.s)).map(t=>num(t.s)))].filter(x=>x>0).sort((a,b)=>a-b),
