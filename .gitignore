@@ -23,6 +23,10 @@
 !/rozklad.css
 !/dzwieki.js
 !/p1_filters.js
+!/p2_checkpoint.js
+!/si_assist.js
+!/ar_auto.js
+!/js/
 historia_pakiet*
 deploy_response*
 *.orig
