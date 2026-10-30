@@ -10,7 +10,7 @@ var N=[{k:'nowy',t:'NOWY PROJEKT',d:'zacznij od rysunku',i:'<path class="f" d="M
 {k:'ustaw',t:'USTAWIENIA',d:'język · stół',i:'<path class="f" d="M24 8l3 5 6-1 1 6 5 3-3 5 3 5-5 3-1 6-6-1-3 5-3-5-6 1-1-6-5-3 3-5-3-5 5-3 1-6 6 1z"/><path d="M24 8l3 5 6-1 1 6 5 3-3 5 3 5-5 3-1 6-6-1-3 5-3-5-6 1-1-6-5-3 3-5-3-5 5-3 1-6 6 1z"/><circle class="a" cx="24" cy="24" r="6"/>'}];window.HALA_N=N;
 var sel=q.has('sel')?+q.get('sel'):-1,root,ring,list,cta,hint;
 function emit(n,d){try{window.dispatchEvent(new CustomEvent('orbit:'+n,{detail:d}))}catch(e){}}
-function weak(){try{var c=document.createElement('canvas'),g=c.getContext('webgl2')||c.getContext('webgl');if(!g)return 'nogl';if(g.getParameter(g.MAX_TEXTURE_SIZE)<4096)return 'tex'}catch(e){return 'nogl'}if(matchMedia('(prefers-reduced-motion: reduce)').matches)return 'rm';return ''}
+function weak(){try{var c=document.createElement('canvas'),g=c.getContext('webgl2')||c.getContext('webgl');if(!g)return 'nogl';if(g.getParameter(g.MAX_TEXTURE_SIZE)<4096)return 'tex'}catch(e){return 'nogl'}/* a11y 1401: reduced-motion NIE przełącza na listę; GL statyczny (orbita_gl.js) */return ''}
 function build(){root=document.createElement('div');root.id='horbit';root.hidden=true;
 root.innerHTML='<div class="top"><div class="logo">ORIAWELD<sub>SI</sub></div></div><div class="stage"><div class="ring" id="hring"></div></div><div class="hint" id="hhint"></div><button class="cta" id="hcta" type="button"></button><nav class="list" id="hlist"></nav>';
 document.body.appendChild(root);ring=root.querySelector('.ring');list=root.querySelector('.list');cta=root.querySelector('.cta');hint=root.querySelector('.hint');
