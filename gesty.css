@@ -1,6 +1,6 @@
 /* Gesty – UI v2 (ORIAWELD premium/chłodny): podgląd jako pływający moduł w rogu, sterowanie jako kompaktowy dok */
 #view{position:relative}
-#gestUI{--g-top:58px;--g-bg:rgba(11,13,20,.78);--g-line:rgba(148,163,184,.22);--g-cy:#22d3ee;--g-vi:#8b5cf6;--g-tx:#e3e8ef;--g-mu:#8a94a6;
+#gestUI{--g-top:58px;--g-bg:rgba(11,13,20,.78);--g-line:rgba(148,163,184,.22);--g-cy:#22d3ee;--g-vi:#9b74f8;--g-tx:#e3e8ef;--g-mu:#8a94a6;
  position:absolute;inset:0;z-index:30;pointer-events:none;font:500 12px/1.2 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--g-tx)}
 #gestUI>*{pointer-events:auto}
 /* dok: przycisk dłoni + kamera + stan */

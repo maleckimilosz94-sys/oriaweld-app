@@ -5,7 +5,7 @@
 ["blacha z obrysu \\(PDF\\)","sheet from outline (PDF)","Blech aus Kontur (PDF)"],
 ["blacha z obrysu \\(G0\\)","sheet from outline (G0)","Blech aus Kontur (G0)"],
 ["blacha gięta \\(PDF\\)","bent sheet (PDF)","Kantblech (PDF)"],
-["blacha płaska","flat sheet","Flachblech"],
+["blacha płaska","flat sheet","Flachblech"],["^płyta$","plate","Platte"],["(?<=: )płyta\\b","plate","Platte"],
 ["blacha gięta","bent sheet","Kantblech"],
 ["PDF wektor","PDF vector","PDF-Vektor"],
 ["profil (\\w+)","profile $1","Profil $1"],
