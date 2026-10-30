@@ -1,0 +1,86 @@
+/* HALA f2 etap B — orbita (scoped z koncepcja_hala_1900/orbita.css) */
+#horbit{display:none}
+body.hala #horbit{display:block;position:fixed;inset:0;z-index:60;background:linear-gradient(180deg,rgba(11,13,20,.35),rgba(11,13,20,.85)),url(hala_bg.jpg) center/cover #0B0D14;--rz:0deg;color:var(--h-tx);font-family:var(--f-t);opacity:1;transition:opacity .3s}
+body.hala #horbit[hidden]{display:none}
+body.hala #horbit.out{opacity:0;pointer-events:none}
+body.hala #horbit button{font-family:inherit;cursor:pointer}
+body.hala #horbit .top .logo{font-family:var(--h-fh);letter-spacing:.08em;color:#eef1f5}
+body.hala #horbit .top .logo sub{font-weight:700;color:var(--h-vi);vertical-align:.35em;margin-left:.3em;padding:.08em .3em;border-radius:.3em;background:rgba(155,116,248,.14);text-shadow:0 0 10px rgba(155,116,248,.7)}
+body.hala #splash .m21art,body.hala #splash .m21mdl{display:none!important}
+body.hala #horbit .top{position:absolute;top:0;left:0;right:0;padding:18px;text-align:center}
+body.hala #horbit .top .logo{font-size:20px}
+body.hala #horbit .top .logo sub{font-size:max(.55em,11px)}
+body.hala #horbit .stage{position:absolute;inset:0;perspective:900px;display:flex;align-items:center;justify-content:center}
+body.hala #horbit .ring{position:relative;width:250px;height:250px;transform-style:preserve-3d;transform:rotateX(58deg) rotateZ(var(--rz,0deg));transition:transform .55s var(--ease)}
+body.hala #horbit .ring::before{content:"";position:absolute;inset:0;border-radius:50%;border:1px solid var(--line);box-shadow:0 0 30px rgba(34,211,238,.12) inset}
+body.hala #horbit .n{position:absolute;left:50%;top:50%;width:104px;margin:-56px 0 0 -52px;transform:rotateZ(var(--a)) translateY(-125px) rotateZ(calc(-1*var(--a) - var(--rz,0deg))) rotateX(-58deg);
+padding:12px 8px 10px;border-radius:var(--r);background:var(--panel);backdrop-filter:blur(10px);border:0;color:var(--tx);text-align:center;transition:box-shadow .15s,background .15s}
+body.hala #horbit .ring{--rz:0deg}
+body.hala #horbit .n svg{width:46px;height:46px;display:block;margin:0 auto 6px;stroke:var(--cy);fill:none;stroke-width:1.6;filter:drop-shadow(0 0 6px rgba(34,211,238,.6))}
+body.hala #horbit .n b{display:block;font:10px var(--f-h);letter-spacing:.06em}
+body.hala #horbit .n small{color:var(--mu);font-size:10px}
+body.hala #horbit .n.sel{background:var(--sel-bg),var(--panel);box-shadow:var(--sel-glow)}
+body.hala #horbit .n.sel::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;border-radius:3px;background:var(--cy)}
+body.hala #horbit .n.sel svg{stroke:#67E8F9;filter:drop-shadow(0 0 10px rgba(34,211,238,.8))}
+body.hala #horbit .cta{position:absolute;bottom:8%;left:50%;transform:translateX(-50%);padding:13px 26px;border-radius:12px;font:12px var(--f-h);letter-spacing:.12em;color:var(--tx);
+background:linear-gradient(90deg,rgba(34,211,238,.22),rgba(34,211,238,.22));border:1px solid rgba(34,211,238,.35);box-shadow:0 0 18px rgba(34,211,238,.25);white-space:nowrap}
+body.hala #horbit .hint{position:absolute;bottom:calc(8% + 58px);width:100%;text-align:center;color:var(--mu);font-size:12px}
+body.hala #horbit .list{display:none;position:absolute;left:16px;right:16px;top:90px}
+body.hala #horbit .list button{display:flex;gap:14px;align-items:center;width:100%;margin-bottom:10px;padding:16px;border:0;border-radius:var(--r);background:var(--panel);color:var(--tx);text-align:left;position:relative}
+body.hala #horbit .list svg{width:30px;height:30px;stroke:var(--cy);fill:none;stroke-width:1.6}
+body.hala #horbit .list b{font:12px var(--f-h);letter-spacing:.1em;display:block}
+body.hala #horbit .list small{color:var(--mu)}
+body.hala #horbit .list .sel{background:var(--sel-bg),var(--panel);box-shadow:var(--sel-glow)}
+body.hala #horbit .list .sel::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:3px;background:var(--cy);border-radius:3px}
+body.hala.fb #horbit .stage,body.hala.fb #horbit .cta,body.hala.fb #horbit .hint{display:none}
+body.hala.fb #horbit .list{display:block}
+body.hala #horbit .n svg .a{stroke:var(--cy-d);opacity:.55}
+body.hala #horbit .n.sel svg .a{stroke:var(--cy);opacity:.9}
+body.hala #horbit .n svg .f{fill:rgba(34,211,238,.10)}
+body.hala #horbit .n.sel svg .f{fill:rgba(34,211,238,.16)}
+body.hala #horbit .list svg .a{opacity:.55}
+body.hala #horbit .list svg .f{fill:rgba(34,211,238,.1)}
+body.hala #horbit .list .sel svg{stroke:#67E8F9}
+/* 2205 i18n: długie DE etykiety (EINSTELLUNGEN) mieszczą się w węźle */
+html[lang=de] body.hala #horbit .n b{font-size:8.6px;letter-spacing:.02em;white-space:nowrap;word-break:normal}
+@media (prefers-reduced-motion:reduce){body.hala #horbit .ring{transition:none}}
+/* etap C — WebGL */
+body.hala #horbit .glcv{position:absolute;inset:0;width:100%;height:100%;display:block}
+body.hala #horbit.gl .ring{display:none}
+body.hala #horbit .glbl{position:absolute;inset:0;pointer-events:none}
+body.hala #horbit .gn{position:absolute;left:0;top:0;pointer-events:auto;padding:6px 10px;border:0;border-radius:10px;background:var(--panel);backdrop-filter:blur(8px);color:var(--h-tx);text-align:center;white-space:nowrap;transition:opacity .2s}
+body.hala #horbit .gn b{display:block;font:9px var(--h-fh);letter-spacing:.06em}body.hala #horbit .gn small{font-size:9px;color:var(--h-mu)}
+body.hala #horbit .gn.sel{background:var(--sel-bg),var(--panel);box-shadow:var(--sel-glow)}
+body.hala #horbit .gn.sel:before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:3px;background:var(--h-cy)}
+body.hala.fb #horbit .glcv,body.hala.fb #horbit .glbl{display:none}
+/* PATCH Grafiki smoke_hala_B: orbit 360 (DOM/fb) */
+/* Hala B — lekka skala orbity na wąskich (max 380 CSS px). Scoped body.hala. Zero publish. */
+@media (max-width: 380px) {
+  body.hala #horbit .ring {
+    width: 220px;
+    height: 220px;
+  }
+  body.hala #horbit .n {
+    width: 92px;
+    margin: -50px 0 0 -46px;
+    transform: rotateZ(var(--a)) translateY(-110px) rotateZ(calc(-1 * var(--a) - var(--rz, 0deg))) rotateX(-58deg);
+    padding: 10px 6px 8px;
+  }
+  body.hala #horbit .n svg {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 4px;
+  }
+  body.hala #horbit .n b {
+    font-size: 9px;
+  }
+  body.hala #horbit .n small {
+    font-size: 9px;
+  }
+  html[lang="de"] body.hala #horbit .n b {
+    font-size: 8px;
+  }
+}
+
+/* C fix 3b: hidden wygrywa z .gl display */
+body.hala #horbit[hidden],body.hala #horbit.gl[hidden]{display:none!important}

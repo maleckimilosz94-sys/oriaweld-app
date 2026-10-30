@@ -1,0 +1,93 @@
+/* HALA f2 — etap A (CSS-only, scoped body.hala). Zrodlo: koncepcja_hala_1900/tokens.css+app.css */
+body.hala{--h-bg:#0B0D14;--h-bg2:#10141D;--h-cy:#22D3EE;--h-cyd:#67E8F9;--h-vi:#9b74f8;--h-tx:#E3E8EF;--h-mu:#94A3B8;
+--h-panel:rgba(11,13,20,.82);--h-line:rgba(34,211,238,.16);--h-r:14px;--h-sel:linear-gradient(90deg,rgba(34,211,238,.20),rgba(34,211,238,.05));
+--h-fh:Michroma,"Segoe UI",sans-serif;--h-fm:"JetBrains Mono",monospace;--h-ease:cubic-bezier(.2,.8,.2,1);
+background:var(--h-bg)!important;color:var(--h-tx)}
+/* tlo hali pod cala appka (spokojne, blur) */
+#halabg{content:"";position:fixed;inset:-4%;z-index:0;pointer-events:none;background:url(stol_top.jpg) center/cover;filter:blur(7px) brightness(.38);transform:scale(1.04)}
+#halabg:after{content:"";position:absolute;inset:0;z-index:0;pointer-events:none;background:radial-gradient(ellipse at 50% 40%,transparent 25%,rgba(11,13,20,.92) 95%)}
+/* SPLASH: bije #splash.m21 !important (wyzsza specyficznosc) */
+body.hala #splash,body.hala #splash.m21{background:linear-gradient(180deg,rgba(11,13,20,.35),rgba(11,13,20,.9)),url(hala_bg.jpg) center/cover no-repeat #0B0D14!important}
+body.hala #splash .sicon{box-shadow:0 0 28px rgba(34,211,238,.45),0 0 70px rgba(34,211,238,.22)!important;animation:halaglow 2.4s ease-in-out infinite alternate!important}
+body.hala #splash .logo sub{color:var(--h-vi)!important;background:rgba(155,116,248,.14);padding:.08em .3em;border-radius:.3em;text-shadow:0 0 10px rgba(155,116,248,.7)}
+body.hala #splash .m21art{filter:drop-shadow(0 0 18px rgba(34,211,238,.25))}
+@keyframes halaglow{from{box-shadow:0 0 22px rgba(34,211,238,.3),0 0 50px rgba(34,211,238,.12)}to{box-shadow:0 0 34px rgba(34,211,238,.55),0 0 80px rgba(34,211,238,.25)}}
+/* header + pasek 3px */
+body.hala header{background:linear-gradient(#0B0D14f0,#0B0D14c0)!important;backdrop-filter:blur(10px);border-bottom:1px solid var(--h-line)!important;z-index:5}
+body.hala header .hlogo{font-family:var(--h-fh)!important;color:#eef1f5!important}
+body.hala header .hlogo sub{color:var(--h-vi)!important}
+body.hala #bar{height:3px!important;background:rgba(34,211,238,.12)!important;border-radius:2px}
+body.hala #prog{background:var(--h-cy)!important;box-shadow:0 0 8px var(--h-cy)}
+body.hala #back{border-radius:50%!important;background:var(--h-panel)!important;border:1px solid var(--h-line)!important;color:var(--h-cyd)!important}
+/* ekrany #app = s1 "calm": panele blur */
+body.hala #app{position:relative;z-index:2;color:var(--h-tx)}
+body.hala #app .card,body.hala #app section{background:var(--h-panel)!important;border:1px solid var(--h-line)!important;border-radius:var(--h-r)!important;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);color:var(--h-tx)!important;animation:halaup .2s var(--h-ease)}
+@keyframes halaup{from{opacity:0;transform:translateY(8px)}}
+body.hala #app h1,body.hala #app h2,body.hala #app h3{font-family:var(--h-fh)!important;letter-spacing:.12em;color:var(--h-tx)!important}
+body.hala #app .btn,body.hala #app button.go,body.hala #app .primary{background:linear-gradient(90deg,rgba(34,211,238,.2),rgba(34,211,238,.25))!important;border:1px solid rgba(34,211,238,.35)!important;box-shadow:0 0 20px rgba(34,211,238,.22)!important;color:var(--h-tx)!important;border-radius:12px!important}
+body.hala #app .sel,body.hala #app .on{background:var(--h-sel)!important;box-shadow:inset 3px 0 0 var(--h-cy),0 0 18px rgba(34,211,238,.2)!important}
+body.hala #app small,body.hala #app .mu{color:var(--h-mu)!important}
+body.hala #app b,body.hala #app code{font-family:var(--h-fm)}
+/* tabs dock */
+body.hala #tabs{background:rgba(11,13,20,.82)!important;backdrop-filter:blur(10px);border-top:1px solid var(--h-line)!important;z-index:5}
+body.hala #tabs button.on{color:var(--h-cy)!important;text-shadow:0 0 10px rgba(34,211,238,.5)}
+/* AR overlay = s4 calm (tylko skorka) */
+body.hala [class*="arov"]{backdrop-filter:blur(10px)}
+@media (prefers-reduced-motion:reduce){body.hala *{animation:none!important}}
+/* dopasowanie do handoff TOKENS.css (t841): aliasy nazw Grafiki, scoped */
+body.hala{--sel-bg:var(--h-sel);--sel-glow:0 0 22px rgba(34,211,238,.30),0 0 40px rgba(34,211,238,.12);--panel:var(--h-panel);--card:#10141d;--si:#9b74f8;--f-h:var(--h-fh);--f-t:Inter,system-ui,sans-serif;--f-m:var(--h-fm)}
+body.hala #app .sel{box-shadow:inset 3px 0 0 var(--h-cy),var(--sel-glow)!important}
+body.hala #back{min-width:44px!important;min-height:44px!important}
+/* .calm wg handoff: tlo blur 6px/.58, karty pelne --card bez backdrop (wydajnosc) */
+body.hala.calm #halabg{filter:blur(6px) brightness(.58);transform:scale(1.05)}
+body.hala.calm #app .card,body.hala.calm #app section{background:var(--card)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+/* tlo hali: live ma nieprzezroczyste warstwy tla -> wymus przezroczystosc w hala */
+body.hala{background:transparent!important}
+#halabg{z-index:-1!important}
+body.hala #app{background:transparent!important}
+#halabg{display:block!important}
+body.hala.calm #app .tile{background:var(--card)!important;border:1px solid var(--h-line)!important;backdrop-filter:none!important}
+/* PATCH Grafiki smoke_hala_B: splash kadr */
+/* Hala B — kadr splash bez stołu: marka+CTA w stożku światła.
+   Selektory pod live M21 (#splash.m21 / .m21go / .m21ft). Scoped body.hala. Zero publish. */
+
+/* Kolumna wyśrodkowana w pionie; footer absolutnie na dole (nie margin-top:auto) */
+body.hala #splash.m21{
+  justify-content:center!important;
+  padding-top:calc(24px + env(safe-area-inset-top))!important;
+  padding-bottom:calc(56px + env(safe-area-inset-bottom))!important;
+  position:relative!important;
+}
+
+/* Stół i podpis modelu już hide w orbita.css — tu tylko spójność */
+body.hala #splash .m21art,
+body.hala #splash .m21mdl{display:none!important}
+
+/* Po ukryciu art: ciaśniejsze odstępy w bloku marki */
+body.hala #splash .logo{margin:0!important}
+body.hala #splash .m21rule{margin:16px 0 12px!important}
+body.hala #splash .m21sub{margin:0!important}
+body.hala #splash .m21cap{margin:8px 0 20px!important}
+
+/* CTA tuż pod podtytułem (w stożku), nie odpychany pustką po art */
+body.hala #splash .m21go{
+  margin:0!important;
+  position:relative!important;
+}
+
+/* Wersja przyklejona do dołu kadru */
+body.hala #splash .m21ft{
+  position:absolute!important;
+  left:0!important;right:0!important;
+  bottom:calc(18px + env(safe-area-inset-bottom))!important;
+  margin:0!important;
+  text-align:center!important;
+}
+
+@media (max-height:700px){
+  body.hala #splash.m21{padding-top:calc(16px + env(safe-area-inset-top))!important}
+  body.hala #splash .m21rule{margin:12px 0 8px!important}
+  body.hala #splash .m21cap{margin:6px 0 14px!important}
+}
+/* Silnik: fix do PATCH_splash_kadr — position:relative zdejmował overlay splasha (app widoczny pod spodem); splash musi zostać fixed */
+body.hala #splash.m21{position:fixed!important;inset:0!important}
