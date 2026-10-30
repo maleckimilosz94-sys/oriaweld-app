@@ -1,5 +1,5 @@
 /* ORIAWELD SI – service worker (tylko cache/offline, bez logiki aplikacji) */
-var VERSION='oria-145-ui1206';
+var VERSION='oria-146-engines-on';
 var CORE=['./','./index.html','./js/app_main.js','./js/i18n_dic.js','./lib/three.min.js','./lib/OrbitControls.js','./vendor/engine/engine.js','./p1_filters.js','./p2_checkpoint.js','./si_assist.js','./vendor/lz-string.min.js','./ar/ar_i18n.js','./gesty_i18n.js','./gesty.js','./gesty_ui.js','./gesty.css','./rozklad_core.js','./rozklad.js','./rozklad.css','./dzwieki.js','./ar_auto.js','./manifest.webmanifest','./icons/icon-32.png','./icons/icon-180.png','./icons/icon-192.png','./img/warsztat_noc.jpg','./img/warsztat_noc_wide.jpg','./vendor/fonts/JetBrainsMono-wght.woff2','./vendor/fonts/Michroma-Regular.woff2','./ar.html','./ar/live.html','./ar/ar_go_pl.png','./ar/ar_go_en.png','./ar/ar_go_de.png'];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(VERSION).then(function(c){return Promise.all(CORE.map(function(u){return c.add(new Request(u,{cache:'reload'})).catch(function(){})}))}))});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(k){return Promise.all(k.filter(function(n){return n.indexOf('oria-')==0&&n!==VERSION}).map(function(n){return caches.delete(n)}))}).then(function(){return self.clients.claim()}))});

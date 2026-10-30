@@ -1,7 +1,7 @@
-/* oria-140: ?arauto=1 (domyślnie OFF). Po 3D → auto plik AR (folder w Plikach gdy się da + schowek ar/live.* + Historia); tap AR = od razu. */
+/* oria-146: arauto domyślnie ON; ?arauto=0 wyłącza (persist 0). */
 (function(){
-try{if(/[?&]arauto=1/.test(location.search))localStorage.setItem('oria_arauto','1');if(/[?&]arauto=0/.test(location.search))localStorage.removeItem('oria_arauto')}catch(e){}
-var ON=localStorage.getItem('oria_arauto')==='1';if(!ON)return;
+try{if(/[?&]arauto=0/.test(location.search)){localStorage.setItem('oria_arauto','0');}else if(/[?&]arauto=1/.test(location.search))localStorage.setItem('oria_arauto','1')}catch(e){}
+var ON=localStorage.getItem('oria_arauto')!=='0';if(!ON)return;
 var LOG=window.__arAutoLog=[];function log(m){LOG.push(Date.now()+' '+m);try{console.log('[arauto]',m)}catch(e){}}
 var E=window.__arEnv||{};var R=window.__arReady=null;var busy=0,tm=0,DIR=null;
 // --- prawdziwy folder (File System Access): tylko gdzie przeglądarka to ma (Chrome/Edge komputer, część Androidów). iOS Safari: brak API → share sheet.
