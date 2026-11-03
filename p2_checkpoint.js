@@ -18,6 +18,7 @@ window.p2Checkpoint=function(m){
  if(window.__p2On===false||/(^|[#&])p2=0/.test(location.hash)||/ask=0/.test(location.hash)||/[?&]p2=0/.test(location.search))return Promise.resolve(m);
  var app=document.getElementById('app');if(!app)return Promise.resolve(m);
  var thumb=null;try{var cs=[].slice.call(document.querySelectorAll('#app canvas')).filter(function(c){return c.width>40&&c.height>40}).sort(function(a,b){return b.width*b.height-a.width*a.height});if(cs[0])thumb=cs[0].toDataURL('image/jpeg',.7)}catch(e){}
+ try{if(window.__linefHook){var c0=cs&&cs[0],lt=window.__linefHook.thumb(m,c0&&c0.width,c0&&c0.height);if(lt)thumb=lt}}catch(e){}/* linef P2 hook: tylko ?linef=1 */
  if(!thumb&&m.thumb)thumb=m.thumb;
  var key=fp(m),M=mem(),pre=(key&&key.indexOf('f:')===0&&M[key])||null;/* oria-132: preselect tylko przy tym samym pliku */
  var st={kind:pre&&pre.kind||null,other:pre&&pre.other||'',profile:pre&&pre.profile||null,iso:pre?pre.iso:null,nParts:pre&&pre.nParts||1,marks:[]},step=1,fromMem=!!pre;

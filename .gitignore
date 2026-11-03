@@ -26,6 +26,9 @@
 !/p2_checkpoint.js
 !/si_assist.js
 !/ar_auto.js
+!/line_filter.js
+!/p2_linef_hook.js
+!/view_compose.js
 !/js/
 !/hala/
 historia_pakiet*
