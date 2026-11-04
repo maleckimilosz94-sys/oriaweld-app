@@ -13,13 +13,14 @@ function clip(p, axis, c, sign){ const out=[], f=q=>sign*(q[axis]-c);
     if (fa<=0) out.push(A);
     if ((fa<0&&fb>0)||(fa>0&&fb<0)){ const t=fa/(fa-fb); out.push([A[0]+t*(B[0]-A[0]),A[1]+t*(B[1]-A[1])]); } }
   return out; }
-export function cutBars(holes, bar=BAR_MM){
+export function cutBars(holes, bar=BAR_MM){ const bx=typeof bar==='object'?bar.x:bar, by=typeof bar==='object'?bar.y:bar;
   const H = holes.map(h=>h.map(q=>q.slice())), cuts=[];
   for (let i=0;i<H.length;i++) for (let j=i+1;j<H.length;j++){
     const a=bbox(H[i]), b=bbox(H[j]);
     const gx=Math.max(a[0],b[0])-Math.min(a[2],b[2]), gy=Math.max(a[1],b[1])-Math.min(a[3],b[3]); // gap (<0 = overlap)
-    if (gx>=bar || gy>=bar) continue;                    // daleko – nic
-    const axis = gx>=gy ? 0 : 1;                          // oś, na której są najbliżej rozdzielenia
+    if (gx>=bx || gy>=by) continue;                    // daleko – nic
+    const axis = (gx/bx)>=(gy/by) ? 0 : 1;                // oś, na której są najbliżej rozdzielenia
+    bar = axis?by:bx;
     const ca=(a[axis]+a[axis+2])/2, cb=(b[axis]+b[axis+2])/2, lo=ca<cb?i:j, hi=ca<cb?j:i;
     const L=bbox(H[lo]), R=bbox(H[hi]), mid=(L[axis+2]+R[axis])/2;
     H[lo]=clip(H[lo],axis,mid-bar/2,+1); H[hi]=clip(H[hi],axis,mid+bar/2,-1);
@@ -27,13 +28,38 @@ export function cutBars(holes, bar=BAR_MM){
   }
   return {holes:H.filter(h=>h.length>=3&&Math.abs(area(h))>1e-6), cuts};
 }
+// g0strip (wyłącznik window.__noG0Strip=1): okna z foto (convex hull) wciągają linie wymiarowe i nachodzą na siebie;
+// stała poprzeczka 6 mm dawała pasy ~6 mm. S = mediana marginesów okno–obrys (mm, tylko <15% gabarytu); przy ≥2 oknach i ≥3 marginesach:
+// margines okno–obrys < 0,6·S → docięcie do S; poprzeczka między oknami = S (cutBars). Bez okien/marginesów – po staremu (6 mm).
+// g0strip OCR (wyłącznik window.__noG0StripOcr=1): wymiary silnika/OCR o wartości 0,6–1,6·S; tekst poziomy → szer. pasa pionowego (SX),
+// pionowy → wys. pasa poziomego (SY). Brana dominanta (≥2 szt. i ≥50% danej orientacji), inaczej mediana S.
+function stripOcr(dims,S){const r={x:S,y:S,src:{x:'mediana',y:'mediana'}};if(!dims||!dims.length||(typeof window!=='undefined'&&window.__noG0StripOcr))return r;
+  [['x',0],['y',1]].forEach(([k,vt])=>{const vs=dims.filter(d=>(d.vert?1:0)===vt&&d.v>=0.6*S&&d.v<=1.6*S).map(d=>d.v);if(vs.length<2)return;
+    const c={};vs.forEach(v=>c[v]=(c[v]||0)+1);const [m,n]=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];
+    if(n>=2&&n/vs.length>=0.5){r[k]=+m;r.src[k]='OCR '+m+' ('+n+'/'+vs.length+')';}});return r;}
+export function g0strip(holes,outline,dims){
+  const H=holes.map(h=>h.map(q=>q.slice())),ob=bbox(outline),W=ob[2]-ob[0],Hh=ob[3]-ob[1],lim=0.15*Math.max(W,Hh),mg=[],fix=[];
+  if(H.length<2) return {holes:H,S:0,fix};
+  H.forEach(h=>{const b=bbox(h);[b[0]-ob[0],b[1]-ob[1],ob[2]-b[2],ob[3]-b[3]].forEach(v=>{if(v>0&&v<lim)mg.push(v)})});
+  mg.sort((a,b)=>a-b); if(mg.length<3) return {holes:H,S:0,fix};
+  const S=Math.min(80,Math.max(BAR_MM,mg[mg.length>>1])), so=stripOcr(dims,S), SX=so.x, SY=so.y;
+  H.forEach((h,i)=>{let b=bbox(h);
+    if(b[0]-ob[0]<0.6*SX){H[i]=clip(H[i],0,ob[0]+SX,-1);fix.push(i+'L')} b=bbox(H[i]);
+    if(b[1]-ob[1]<0.6*SY){H[i]=clip(H[i],1,ob[1]+SY,-1);fix.push(i+'B')} b=bbox(H[i]);
+    if(ob[2]-b[2]<0.6*SX){H[i]=clip(H[i],0,ob[2]-SX,+1);fix.push(i+'R')} b=bbox(H[i]);
+    if(ob[3]-b[3]<0.6*SY){H[i]=clip(H[i],1,ob[3]-SY,+1);fix.push(i+'T')} });
+  return {holes:H,S:+S.toFixed(1),SX,SY,src:so.src,fix};
+}
 // input: {outline:[[x,y]..] px, holes:[[[x,y]..]..] px, thicknessMm?=4, widthMm?=602} (Y obrazu w dół)
 export function buildSheetG0(input, opts={}){
   const T=input.thicknessMm||4, W=input.widthMm||602, O=input.outline;
   const xs=O.map(p=>p[0]), x0=Math.min(...xs), s=W/(Math.max(...xs)-x0), maxY=Math.max(...O.map(p=>p[1]));
   const mm=p=>p.map(([x,y])=>[(x-x0)*s,(maxY-y)*s]);
-  const r=cutBars((input.holes||[]).map(mm), opts.bar||BAR_MM);
-  const desc={outline:mm(O),holes:r.holes,cuts:r.cuts,depth:T,scaleMmPerPx:s};
+  let HM=(input.holes||[]).map(mm), st=null;
+  if(!opts.bar&&!(typeof window!=='undefined'&&window.__noG0Strip)){ st=g0strip(HM,mm(O),input.dims); HM=st.holes; }
+  const r=cutBars(HM, opts.bar||(st&&st.S&&{x:st.SX,y:st.SY})||BAR_MM);
+  const desc={outline:mm(O),holes:r.holes,cuts:r.cuts,depth:T,scaleMmPerPx:s,strip:st&&{S:st.S,SX:st.SX,SY:st.SY,src:st.src,fix:st.fix}};
+  if(typeof window!=='undefined'){window.__g0strip=desc.strip?Object.assign({bb:r.holes.map(h=>bbox(h).map(Math.round))},desc.strip):null;}
   const THREE=opts.THREE||(typeof globalThis!=='undefined'&&globalThis.THREE);
   if (!THREE) return desc;
   const V=a=>a.map(([x,y])=>new THREE.Vector2(x,y));
@@ -45,7 +71,7 @@ export function buildSheetG0(input, opts={}){
 // Adapter pod przyszłe wpięcie (window.SheetG0Cand(m)) – rejestrowany TYLKO gdy ktoś jawnie zawoła registerSheetG0().
 export function registerSheetG0(win=globalThis){
   win.SheetG0Cand=function(m,o={}){ const v=(m.views||[]).filter(v=>v.outlinePolygon&&v.holes&&(v.holes.length||(win.__b2PdfForce===true&&v.outlinePolygon.length>=3))).sort((a,b)=>b.holes.length-a.holes.length)[0];
-    if(!v) return null; const d=buildSheetG0({outline:v.outlinePolygon,holes:v.holes,thicknessMm:m.thicknessMm,widthMm:o.widthMm});
+    if(!v) return null; const d=buildSheetG0({outline:v.outlinePolygon,holes:v.holes,thicknessMm:m.thicknessMm,widthMm:o.widthMm,dims:o.dims});
     return {id:'sheetG0',label:'blacha z obrysu',geom:d.geometry,score:0.9,why:['G0: '+d.holes.length+' otwory']}; };
   win.PdfVecToG0=r=>pdfVecToG0View(r);
   win.PdfVecToBent=(r,o)=>pdfVecToBent(r,o);

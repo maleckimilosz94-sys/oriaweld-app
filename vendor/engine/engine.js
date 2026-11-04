@@ -19,7 +19,7 @@ function ppRec(pp,c){var h=48,w=Math.min(1600,Math.max(48,Math.round(c.width*48/
   return {t:txt.trim(),c:ps.length?100*ps.reduce(function(a,b){return a+b},0)/ps.length:0};});}
 function loadCV(){if(cvP)return cvP;cvP=new Promise(function(res,rej){ if(window.cv&&window.cv.Mat)return res({cv:cv});var s=document.createElement('script');s.src=base+'opencv.js';s.onerror=function(){rej('brak opencv.js')};
  s.onload=function(){if(cv.Mat)return res({cv:cv});cv.onRuntimeInitialized=function(){res({cv:cv})};};document.head.appendChild(s);});return cvP;}
-function ocrW(){if(ocrP)return ocrP;var vb=base.replace(/engine\/$/,'');ocrP=Tesseract.createWorker('eng',1,{workerPath:vb+'worker.min.js',corePath:vb+'core',langPath:vb+'lang',gzip:true})
+function ocrW(){if(ocrP)return ocrP;var vb=base.replace(/engine\/$/,'');ocrP=((typeof Tesseract!=='undefined')?Promise.resolve():(window.__lazy?window.__lazy('tess'):Promise.reject(new Error('Tesseract is not defined')))).then(function(){return Tesseract.createWorker('eng',1,{workerPath:vb+'worker.min.js',corePath:vb+'core',langPath:vb+'lang',gzip:true})})
  .then(function(w){return w.setParameters({tessedit_pageseg_mode:'7',tessedit_char_whitelist:'0123456789.,øØR×x±'}).then(function(){return w;});});return ocrP;}
 function rect(r,k){return {x:Math.round(r.x/k),y:Math.round(r.y/k),w:Math.round(r.width/k),h:Math.round(r.height/k)};}
 function inside(a,b){return a.x>=b.x&&a.y>=b.y&&a.x+a.w<=b.x+b.w&&a.y+a.h<=b.y+b.h;}

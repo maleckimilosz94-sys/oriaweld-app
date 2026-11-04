@@ -47,26 +47,34 @@ window.siAssist={
   var TB=m.titleBlockBox||(m.info&&m.info.titleBlockBox)||window.__titleBlockBox||null,MX=Math.max.apply(0,m.size.map(function(x){return +x||0}));m.__dimTbDrop=[];
   var inTB=function(n){if(window.__dimTbKeep||!TB||n.x==null)return false;var cx=n.x+(n.w||0)/2,cy=n.y+(n.h||0)/2,e=4;return cx>=TB.x-e&&cx<=TB.x+TB.w+e&&cy>=TB.y-e&&cy<=TB.y+TB.h+e};
   var tbNum=function(n,v){if(window.__dimTbKeep)return false;if(inTB(n))return true;var t=String(n.text||'');/* tabliczka: duże liczby całkowite (nr rys., data, skala) daleko od gabarytu, np. 2810 */
-   if(v>=1000&&MX>0&&v>2.5*MX&&!/[.,]/.test(t))return true;if(/^(19|20)\d\d$/.test(t.trim())&&MX>0&&Math.abs(v/MX-1)>0.1)return true;return false};
+   if(v>=1000&&MX>0&&v>2.5*MX&&!/[.,]/.test(t))return true;if(/\d{3,}\s*-\s*\d{3}/.test(t))return true;/* hard148: nr rysunku 1368-631.00… */if(/^(19|20)\d\d$/.test(t.trim())&&MX>0&&Math.abs(v/MX-1)>0.1)return true;return false};
   var N=[],seen={};m.nums.forEach(function(n){var p=n.p;if(p&&tbNum(n,p.value)){m.__dimTbDrop.push(p.value);return}if(!p||!(p.value>=10&&p.value<6000)||p.prefix=='ø'||p.prefix=='Ø'||p.tol)return;if((n.conf||0)<70&&n.src!='strip')return;var v=Math.round(p.value*10)/10;if(seen[v])return;seen[v]=1;N.push(v)});
   (m.manual||[]).forEach(function(x){if(x.value>=10&&!seen[x.value]){seen[x.value]=1;N.push(x.value)}});
   if(!N.length)return null;N.sort(function(a,b){return b-a});
   var ax=[0,1,2].map(function(i){return {i:i,s:+m.size[i]||0}}).filter(function(a){return a.s>=20}).sort(function(a,b){return b.s-a.s});if(!ax.length)return null;
-  if(N.some(function(v){return Math.abs(v/ax[0].s-1)<=(window.__dimOk||0.1)}))return null; /* gabaryt już ma swój wymiar na rysunku (np. 04: 578) – bez pytania */
+  var bigN=N.filter(function(v){return v>1.8*ax[0].s}).length,sheetBig=(m.kind==='plate'||m.kind==='bent')&&window.__sheetAsk!==false&&N[0]>3*ax[0].s&&bigN>=3;if(sheetBig)m.__dimSheetBig=bigN;
+  if(!sheetBig&&N.some(function(v){return Math.abs(v/ax[0].s-1)<=(window.__dimOk||0.1)}))return null; /* gabaryt już ma swój wymiar na rysunku (np. 04: 578) – bez pytania */
   var NM=['długość','wysokość','głębokość'],axes=[],factors=[1,1,1],bad=[];
   /* oś największa vs największy wymiar (gabaryt); kolejne osie vs najbliższy wymiar */
   ax.forEach(function(a,r){var t;if(r==0)t=N[0];else{t=null;N.forEach(function(v){if(v<=N[0]&&(t==null||Math.abs(Math.log(v/a.s))<Math.abs(Math.log(t/a.s))))t=v})}
    if(!t)return;var f=t/a.s;axes.push({axis:a.i,name:NM[a.i],model:Math.round(a.s),dim:t,f:+f.toFixed(2)});if(Math.abs(f-1)>TH&&(r==0||Math.abs(f-1)>0.5)){factors[a.i]=+f.toFixed(3);bad.push(a.i)}});
   if(bad.indexOf(ax[0].i)<0)return null; /* liczy się gabaryt – reszta tylko gdy główna oś też nie pasuje */
   var A=axes.filter(function(a){return bad.indexOf(a.axis)>=0});
-  if(window.__dimFitGuard===true&&m.kind==='plate'&&A.length==1&&(A[0].f>1.5||A[0].f<1/1.5)){m.__dimFitGuarded=A[0];console.log('si: dimFitGuard – plate, jedna oś ×'+A[0].f+' – bez Dopasuj');return null}
+  if(window.__dimFitGuard===true&&(m.kind==='plate'||m.kind==='bent')&&A.length==1&&(A[0].f>1.5||A[0].f<1/1.5)){m.__dimFitGuarded=A[0];
+   /* hard148: blacha – zamiast cichego pominięcia: STOP+pytanie, skala jednorodna w płaszczyźnie blachy (2 największe osie), grubość bez zmian + ostrzeżenie */
+   if(window.__sheetAsk!==false&&ax.length>=2){var f=A[0].f,fu=[1,1,1];fu[ax[0].i]=f;fu[ax[1].i]=f;var th=ax.length>2?ax[2]:null,thW=th&&th.s>0.08*ax[1].s;
+    var axU=[ax[0],ax[1]].map(function(a){return {axis:a.i,name:NM[a.i],model:Math.round(a.s),dim:Math.round(a.s*f),f:+f.toFixed(2)}});
+    console.log('si: dimFitGuard→sheetAsk ×'+f);
+    return {axes:axU,factors:fu,maxDim:N[0],maxModel:Math.round(ax[0].s),sheet:1,thickWarn:thW?Math.round(th.s):0,
+     msg:tx('mod')+' '+axU.map(function(a){return tx(a.name)+' '+a.model+' mm'}).join(', ')+' – '+tx('fr')+': '+N[0]+' mm (×'+axU[0].f+', '+tx('sheetU')+').'+(thW?' '+tx('thick')+' '+Math.round(th.s)+' mm?':'')}}
+   console.log('si: dimFitGuard – plate, jedna oś ×'+A[0].f+' – bez Dopasuj');return null}
   return {axes:A,factors:factors,maxDim:N[0],maxModel:Math.round(ax[0].s),
    msg:tx('mod')+' '+A.map(function(a){return tx(a.name)+' '+a.model+' mm'}).join(', ')+' – '+tx('fr')+': '+A.map(function(a){return a.dim+' mm'}).join(', ')+' (×'+A.map(function(a){return a.f}).join(', ×')+').'}}
 };
 /* STOP i pytanie przed showAuto2 (tylko Wsparcie SI ON) */
 var DT={pl:['⚠ Wymiary nie pasują do modelu. Co robić?','Dopasuj do wymiarów','Zostaw z rysunku','Popraw ręcznie','Zastosuj','Wpisz gabaryt [mm]'],en:['⚠ Dimensions do not match the model. What to do?','Fit to dimensions','Keep drawing geometry','Correct manually','Apply','Enter overall size [mm]'],de:['⚠ Maße passen nicht zum Modell. Was tun?','An Maße anpassen','Zeichnung beibehalten','Manuell korrigieren','Übernehmen','Gesamtmaß eingeben [mm]']};
 function dt(i){return (DT[L()]||DT.pl)[i]}
-var TX={en:{'długość':'length','wysokość':'height','głębokość':'depth',h:'⚡ Full auto',mod:'Model',fr:'drawing dimensions',fit:'Dimensions did not match the model – fitted to drawing dimensions',keep:'Dimensions do not match the model – drawing geometry kept (to check).',man:'Overall size entered manually: '},de:{'długość':'Länge','wysokość':'Höhe','głębokość':'Tiefe',h:'⚡ Vollautomatik',mod:'Modell',fr:'Maße aus der Zeichnung',fit:'Maße passten nicht zum Modell – an Zeichnungsmaße angepasst',keep:'Maße passen nicht zum Modell – Zeichnungsgeometrie beibehalten (prüfen).',man:'Gesamtmaß manuell eingegeben: '},pl:{h:'⚡ Pełny automat',mod:'Model',fr:'wymiary z rysunku',fit:'Wymiary nie pasowały do modelu – dopasowano do wymiarów z rysunku',keep:'Wymiary nie pasują do modelu – zostawiono geometrię z rysunku (do sprawdzenia).',man:'Gabaryt wpisany ręcznie: '}};
+var TX={en:{sheetU:'sheet – uniform in-plane scale',thick:'⚠ Thickness looks too large:','długość':'length','wysokość':'height','głębokość':'depth',h:'⚡ Full auto',mod:'Model',fr:'drawing dimensions',fit:'Dimensions did not match the model – fitted to drawing dimensions',keep:'Dimensions do not match the model – drawing geometry kept (to check).',man:'Overall size entered manually: '},de:{sheetU:'Blech – gleichmäßige Skalierung in der Ebene',thick:'⚠ Dicke wirkt zu groß:','długość':'Länge','wysokość':'Höhe','głębokość':'Tiefe',h:'⚡ Vollautomatik',mod:'Modell',fr:'Maße aus der Zeichnung',fit:'Maße passten nicht zum Modell – an Zeichnungsmaße angepasst',keep:'Maße passen nicht zum Modell – Zeichnungsgeometrie beibehalten (prüfen).',man:'Gesamtmaß manuell eingegeben: '},pl:{sheetU:'blacha – skala jednakowa w płaszczyźnie',thick:'⚠ Grubość wygląda na zawyżoną:',h:'⚡ Pełny automat',mod:'Model',fr:'wymiary z rysunku',fit:'Wymiary nie pasowały do modelu – dopasowano do wymiarów z rysunku',keep:'Wymiary nie pasują do modelu – zostawiono geometrię z rysunku (do sprawdzenia).',man:'Gabaryt wpisany ręcznie: '}};
 function tx(k){var d=TX[L()]||TX.pl;return d[k]!=null?d[k]:k}
 function scaleTo(m,k){if(!m.geo||!m.geo.scale)return;m.geo.scale(k[0],k[1],k[2]);m.geo.computeBoundingBox();var c=m.geo.boundingBox;m.size=[c.max.x-c.min.x,c.max.y-c.min.y,c.max.z-c.min.z];if(m.mesh){m.mesh.W=m.size[0];m.mesh.H=m.size[1];m.mesh.D=m.size[2]}}
 function askDim(m,c,done){var app=document.getElementById('app');if(!app)return done();var N=['długość','wysokość','głębokość'];

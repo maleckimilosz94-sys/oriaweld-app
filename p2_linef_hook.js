@@ -8,7 +8,7 @@
  function load(){var n=name();if(root.__f2&&root.__f2File===n)return Promise.resolve(root.__f2);root.__f2=null;root.__f2File=null;if(!n||typeof fetch!=='function')return Promise.resolve(null);
   return fetch('f2/'+n+'.sheet.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(name()!==n)return null;if(j){root.__f2=j;root.__f2File=n}return root.__f2||null}).catch(function(){return null})}
  /* czysta funkcja (testowalna w Node): F2 json → wynik filtra + segmenty do rysowania */
- function prep(J,opts){var F=root.OriaLineFilter;if(!F||!J||!J.lines)return null;var r=F.filterF2(J,{keepBend:!!(opts&&opts.keepBend)});var cs=F.toCleanSet(r.keep);var ko=!(opts&&opts.thumbKonturOnly===false);
+ function prep(J,opts){var F=root.OriaLineFilter;if(!F||!J||!J.lines)return null;var r=F.filterF2(J,{keepBend:!!(opts&&opts.keepBend),strict:!!(opts&&opts.strict||(typeof window!=='undefined'&&(window.__lineFilterStrict===true||/(^|[#&?])linef=2/.test((window.location&&(window.location.hash+window.location.search))||''))))});var cs=F.toCleanSet(r.keep);var ko=!(opts&&opts.thumbKonturOnly===false);
   /* v0.2: miniatura domyślnie tylko kontur (+gięcie gdy keepBend); wymiary tylko gdy thumbKonturOnly=false (?linefDims=1) */
   var segs=ko?cs.segments.filter(function(s){return s.cls==='kontur'||s.cls==='linia_giecia'}):cs.segments;return {res:r,segs:segs,W:J.W,H:J.H}}
  function render(P,w,h){if(!P||typeof document==='undefined')return null;var W=P.W||w,H=P.H||h;var c=document.createElement('canvas');c.width=w||W;c.height=h||H;var g=c.getContext('2d');if(!g)return null;
