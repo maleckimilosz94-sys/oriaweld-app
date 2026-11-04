@@ -57,3 +57,4 @@ deploy_response*
 *.pdf
 *.zip
 !/img_load.js
+!/p2_vlm_hint.js
