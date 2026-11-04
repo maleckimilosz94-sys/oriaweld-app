@@ -56,3 +56,4 @@ deploy_response*
 *.orig
 *.pdf
 *.zip
+!/img_load.js

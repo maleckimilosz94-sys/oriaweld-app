@@ -76,6 +76,8 @@ function vlmPrefer(m,C){var G=window.__vlmFirstGeo;if(!on()||!G||!G.elementy||!G
  var best=null;C.forEach(function(c,i){var d=c&&c.geo&&dims(c.geo);if(!d)return;T.forEach(function(t){var er=Math.max(Math.abs(d[0]/t[0]-1),Math.abs(d[1]/t[1]-1));if(!best||er<best.er)best={c:c,i:i,er:er}})});
  G.cand={err:best?+best.er.toFixed(3):null,status:'APPROXIMATE',review:'NEEDS_REVIEW'};if(!best||best.er>0.25)return C;
  var c=best.c;c.vlmPref=1;c.status='APPROXIMATE';c.review='NEEDS_REVIEW';G.cand.name=c.name;
+ /* fix 06: obrys VLM jest 2D (APPROX) — nie potwierdza 3. wymiaru; grubej bryły (d3>35% d2, np. bent ~669³) nie forsujemy ponad OFF */
+ var bd=dims(c.geo);G.cand.flat=bd?+(bd[2]/bd[1]).toFixed(3):null;if(!bd||bd[2]>0.35*bd[1]){G.cand.mode='adnotacja (3. wymiar niepotwierdzony obrysem 2D)';return C}
  if(C.some(function(x){return x!==c&&x.force&&(x.p2iso||x.p2plates)})){G.cand.mode='adnotacja (P2 force ma pierwszeństwo)';return C}
  C.splice(best.i,1);C.unshift(c);C.forEach(function(x){if(x!==c&&x.force)x.force=0});c.force=1;m.__vlmNarrow=[c.name];G.cand.mode='force';return C}
 function wrapCandV(){var o=window.candidates;if(typeof o!=='function'||o.__vlmPref)return;var w=function(m){var C=o.apply(this,arguments);try{return vlmPrefer(m,C)}catch(e){return C}};w.__vlmPref=1;w.__mid=o.__mid;window.candidates=w}
