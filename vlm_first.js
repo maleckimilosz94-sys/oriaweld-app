@@ -66,7 +66,9 @@ function vlmGeo(info,p){var V=info&&info.res&&info.res.views;if(!V||!p.vlmElemen
   var xs=o.Q.map(function(q){return q[0]}),ys=o.Q.map(function(q){return q[1]}),bb={x:Math.min.apply(0,xs),y:Math.min.apply(0,ys)};bb.w=Math.max.apply(0,xs)-bb.x;bb.h=Math.max.apply(0,ys)-bb.y;
   e.obrys={poly:o.Q,bbox:bb,how:o.how,status:'APPROXIMATE',review:'NEEDS_REVIEW'};
   var hit=V.filter(function(v){return v.bbox&&iou([bb.x,bb.y,bb.x+bb.w,bb.y+bb.h],[v.bbox.x,v.bbox.y,v.bbox.x+v.bbox.w,v.bbox.y+v.bbox.h])>=0.5})[0];
-  if(hit){hit.vlmElem=e.idx;e.obrys.view='istniejący'}else{V.push({bbox:bb,outlinePolygon:o.Q,contours:[],angle:0,confidence:50,vlmElem:e.idx,status:'APPROXIMATE',review:'NEEDS_REVIEW'});e.obrys.view='nowy kandydat'}
+  /* oria-169 fix 06: obrys VLM leżący w istniejącym rzucie (cv kontur, ≥80% pola) to część/detal tego rzutu — NIE nowy widok; dokładanie go psuło dobór rzutów i skalę (06: mmpx 1.53→4.35, bryła 1735×1137×616 vs OFF 602×580×70) */
+  var ins=(hit||o.how!=='cv kontur w ROI')?null:V.filter(function(v){var r=v.bbox;if(!r)return false;var iw=Math.min(bb.x+bb.w,r.x+r.w)-Math.max(bb.x,r.x),ih=Math.min(bb.y+bb.h,r.y+r.h)-Math.max(bb.y,r.y);return iw>0&&ih>0&&iw*ih>=0.8*bb.w*bb.h})[0];
+  if(hit){hit.vlmElem=e.idx;e.obrys.view='istniejący'}else if(ins){e.obrys.view='wewnątrz rzutu'}else{V.push({bbox:bb,outlinePolygon:o.Q,contours:[],angle:0,confidence:50,vlmElem:e.idx,status:'APPROXIMATE',review:'NEEDS_REVIEW'});e.obrys.view='nowy kandydat'}
   out.push({idx:e.idx,how:o.how,view:e.obrys.view,bbox:bb})});
  p.vlmGeo={elementy:out,status:'APPROXIMATE',review:'NEEDS_REVIEW'};window.__vlmFirstGeo=p.vlmGeo}
 /* roadmapa A krok 2: candidates priorytetyzują obrysy vlmElem (tylko ?vlmfirst=1 + __vlmFirstGeo); nie nadpisuje force z P2 (isoFrame/plates); APPROXIMATE+NEEDS_REVIEW */
