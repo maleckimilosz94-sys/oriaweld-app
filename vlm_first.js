@@ -52,7 +52,34 @@ function bindView(info,p){var V=info&&info.res&&info.res.views,B=p.mainBox;if(!V
  V.forEach(function(v,i){var r=v.bbox;if(!r&&v.outlinePolygon&&v.outlinePolygon.length>2){var xs=v.outlinePolygon.map(function(q){return q[0]}),ys=v.outlinePolygon.map(function(q){return q[1]});r={x:Math.min.apply(0,xs),y:Math.min.apply(0,ys),w:Math.max.apply(0,xs)-Math.min.apply(0,xs),h:Math.max.apply(0,ys)-Math.min.apply(0,ys)}}
   if(!r)return;var u=iou(b,[r.x,r.y,r.x+r.w,r.y+r.h]);if(!best||u>best.u)best={i:i,u:u}});
  if(best&&best.u>=0.3){V[best.i].vlmMain=1;p.mainView={idx:best.i,iou:+best.u.toFixed(2)};window.__vlmFirstView=p.mainView}else p.mainView={idx:null,iou:best?+best.u.toFixed(2):0}}
-window.__vlmFirstApi={on:on,norm:norm,validate:validate,iou:iou,bindView:bindView,interpret:interpret,TK:TK,FIX:FIX};
+/* roadmapa A: obrys elementu VLM TYLKO w ROI bboxPx (cv: kontur tuszu w cropie; bez cv: punkty obrysów istniejących rzutów przycięte do ROI). Nic poza ROI, brak konturu → brak geometrii. */
+function roiOutline(info,R){var cv=info&&(info.cv||window.cv),S=info&&info.sheet,x=R[0],y=R[1],w=R[2]-R[0],h=R[3]-R[1];if(!(w>8&&h>8))return null;
+ var cl=function(Q){return Q.map(function(q){return [Math.max(x,Math.min(x+w,q[0])),Math.max(y,Math.min(y+h,q[1]))]})};
+ if(cv&&cv.imread&&S){try{var src=cv.imread(S),roi=src.roi(new cv.Rect(x,y,Math.min(w,src.cols-x),Math.min(h,src.rows-y))),g=new cv.Mat(),mk=new cv.Mat();cv.cvtColor(roi,g,cv.COLOR_RGBA2GRAY);cv.adaptiveThreshold(g,mk,255,cv.ADAPTIVE_THRESH_MEAN_C,cv.THRESH_BINARY_INV,31,15);
+  var ke=cv.getStructuringElement(cv.MORPH_RECT,new cv.Size(3,3));cv.dilate(mk,mk,ke);var cs=new cv.MatVector(),hi=new cv.Mat();cv.findContours(mk,cs,hi,cv.RETR_EXTERNAL,cv.CHAIN_APPROX_SIMPLE);var best=null;
+  for(var i=0;i<cs.size();i++){var c=cs.get(i),A=cv.contourArea(c);if(A<0.15*w*h)continue;if(!best||A>best.A){var ap=new cv.Mat();cv.approxPolyDP(c,ap,Math.max(2,Math.max(w,h)*0.01),true);var Q=[];for(var j=0;j<ap.rows;j++)Q.push([ap.data32S[j*2]+x,ap.data32S[j*2+1]+y]);ap.delete();best={A:A,Q:Q}}}
+  [src,roi,g,mk,ke,cs,hi].forEach(function(m){try{m.delete()}catch(e){}});if(best&&best.Q.length>=3)return {Q:cl(best.Q),how:'cv kontur w ROI'}}catch(e){}}
+ var V=info&&info.res&&info.res.views||[],U=null;V.forEach(function(v){var r=v.bbox;if(!r)return;var a=Math.max(x,r.x),b=Math.max(y,r.y),c=Math.min(x+w,r.x+r.w),d=Math.min(y+h,r.y+r.h);if(c-a<=2||d-b<=2)return;U=U?[Math.min(U[0],a),Math.min(U[1],b),Math.max(U[2],c),Math.max(U[3],d)]:[a,b,c,d]});
+ if(!U||(U[2]-U[0])*(U[3]-U[1])<0.15*w*h)return null;return {Q:[[U[0],U[1]],[U[2],U[1]],[U[2],U[3]],[U[0],U[3]]],how:'obrys rzutu przycięty do ROI'}}
+function vlmGeo(info,p){var V=info&&info.res&&info.res.views;if(!V||!p.vlmElements||!p.vlmElements.length)return;var out=[];
+ p.vlmElements.forEach(function(e){if(!e.bboxPx)return;var o=roiOutline(info,e.bboxPx);if(!o){e.obrys=null;return}
+  var xs=o.Q.map(function(q){return q[0]}),ys=o.Q.map(function(q){return q[1]}),bb={x:Math.min.apply(0,xs),y:Math.min.apply(0,ys)};bb.w=Math.max.apply(0,xs)-bb.x;bb.h=Math.max.apply(0,ys)-bb.y;
+  e.obrys={poly:o.Q,bbox:bb,how:o.how,status:'APPROXIMATE',review:'NEEDS_REVIEW'};
+  var hit=V.filter(function(v){return v.bbox&&iou([bb.x,bb.y,bb.x+bb.w,bb.y+bb.h],[v.bbox.x,v.bbox.y,v.bbox.x+v.bbox.w,v.bbox.y+v.bbox.h])>=0.5})[0];
+  if(hit){hit.vlmElem=e.idx;e.obrys.view='istniejący'}else{V.push({bbox:bb,outlinePolygon:o.Q,contours:[],angle:0,confidence:50,vlmElem:e.idx,status:'APPROXIMATE',review:'NEEDS_REVIEW'});e.obrys.view='nowy kandydat'}
+  out.push({idx:e.idx,how:o.how,view:e.obrys.view,bbox:bb})});
+ p.vlmGeo={elementy:out,status:'APPROXIMATE',review:'NEEDS_REVIEW'};window.__vlmFirstGeo=p.vlmGeo}
+/* roadmapa A krok 2: candidates priorytetyzują obrysy vlmElem (tylko ?vlmfirst=1 + __vlmFirstGeo); nie nadpisuje force z P2 (isoFrame/plates); APPROXIMATE+NEEDS_REVIEW */
+function dims(g){try{g.computeBoundingBox();var b=g.boundingBox;return [b.max.x-b.min.x,b.max.y-b.min.y,b.max.z-b.min.z].sort(function(a,c){return c-a})}catch(e){return null}}
+function vlmPrefer(m,C){var G=window.__vlmFirstGeo;if(!on()||!G||!G.elementy||!G.elementy.length||!C||!C.length||!m)return C;var k=+m.mmpx||0;if(!(k>0))return C;
+ var T=G.elementy.filter(function(e){return e.bbox&&e.bbox.w>0&&e.bbox.h>0}).map(function(e){return [e.bbox.w*k,e.bbox.h*k].sort(function(a,c){return c-a})});if(!T.length)return C;
+ var best=null;C.forEach(function(c,i){var d=c&&c.geo&&dims(c.geo);if(!d)return;T.forEach(function(t){var er=Math.max(Math.abs(d[0]/t[0]-1),Math.abs(d[1]/t[1]-1));if(!best||er<best.er)best={c:c,i:i,er:er}})});
+ G.cand={err:best?+best.er.toFixed(3):null,status:'APPROXIMATE',review:'NEEDS_REVIEW'};if(!best||best.er>0.25)return C;
+ var c=best.c;c.vlmPref=1;c.status='APPROXIMATE';c.review='NEEDS_REVIEW';G.cand.name=c.name;
+ if(C.some(function(x){return x!==c&&x.force&&(x.p2iso||x.p2plates)})){G.cand.mode='adnotacja (P2 force ma pierwszeństwo)';return C}
+ C.splice(best.i,1);C.unshift(c);C.forEach(function(x){if(x!==c&&x.force)x.force=0});c.force=1;m.__vlmNarrow=[c.name];G.cand.mode='force';return C}
+function wrapCandV(){var o=window.candidates;if(typeof o!=='function'||o.__vlmPref)return;var w=function(m){var C=o.apply(this,arguments);try{return vlmPrefer(m,C)}catch(e){return C}};w.__vlmPref=1;w.__mid=o.__mid;window.candidates=w}
+window.__vlmFirstApi={on:on,norm:norm,validate:validate,iou:iou,bindView:bindView,roiOutline:roiOutline,vlmGeo:vlmGeo,vlmPrefer:vlmPrefer,interpret:interpret,TK:TK,FIX:FIX};
 function wrap(){var pm=window.p2Mid;if(!pm||pm.__vlmFirst)return;
  var w=function(info){if(!on())return pm.apply(this,arguments);var self=this,args=arguments;window.__p2Gate=1;/* P2 obowiązkowe */
   return interpret(info).then(function(I){window.__vlmFirstLast=I;window.__p2Suggest=I;var ui=window.p2CheckpointUI;
@@ -70,10 +97,11 @@ function wrap(){var pm=window.p2Mid;if(!pm||pm.__vlmFirst)return;
      p.vlmFirst.elementyIdx=ACC;
      p.vlmElements=EL.map(function(e,i){return {e:e,i:i}}).filter(function(o){return (!ACC||ACC.indexOf(o.i)>=0)&&o.e.bbox}).map(function(o){var e=o.e,b=e.bbox;return {idx:o.i,potwierdzono:!!ACC,nazwa:e.nazwa,rodzaj:e.rodzaj,bbox:b,bboxPx:W?[Math.round(b[0]/1000*W),Math.round(b[1]/1000*H),Math.round(b[2]/1000*W),Math.round(b[3]/1000*H)]:null,status:'APPROXIMATE',review:'NEEDS_REVIEW',zrodlo:'vlmfirst'}});
      if(!p.vlmElements.length)p.vlmFirst.geometria=I&&I.blocker?'brak (VLM niedostępny)':(ACC&&!ACC.length&&EL.length?'brak – użytkownik odrzucił wszystkie elementy, tylko typ + P2':'brak – bboxy VLM odrzucone, tylko typ + P2');
+     if(I&&!I.blocker)try{vlmGeo(info,p)}catch(e){}
      if(g&&W&&!(p.marks||[]).some(function(k){return k.t==='rzut główny'})){(p.marks=p.marks||[]).push({t:'rzut główny',x:+((g[0]+g[2])/2000).toFixed(4),y:+((g[1]+g[3])/2000).toFixed(4),vlm:1});
       p.mainBox={x:Math.round(g[0]/1000*W),y:Math.round(g[1]/1000*H),w:Math.round((g[2]-g[0])/1000*W),h:Math.round((g[3]-g[1])/1000*H),zrodlo:'vlmfirst'};bindView(info,p)}}
      else{var HG=window.OriaP2HardGate;if(HG)return HG.hold(window,I);window.__p2GateLast={allowed:false,reason:'vlmfirst: P2 nie zatwierdzone',suggest:I};return new Promise(function(){})}return r})};
    return pm.apply(self,args).then(function(r){window.p2CheckpointUI=ui;return r},function(e){window.p2CheckpointUI=ui;throw e})})};
  w.__vlmFirst=1;w.__vlm=pm.__vlm;w.__f2=pm.__f2;window.p2Mid=w}
-wrap();window.addEventListener('load',function(){setTimeout(wrap,5)});
+wrap();wrapCandV();window.addEventListener('load',function(){setTimeout(function(){wrap();wrapCandV()},5)});
 })();
