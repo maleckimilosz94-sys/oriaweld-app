@@ -13,7 +13,7 @@
   var g=new THREE.ExtrudeGeometry(sh,{depth:L,bevelEnabled:false,curveSegments:40});if(W>=H)g.rotateY(Math.PI/2);else g.rotateX(-Math.PI/2);g.computeBoundingBox();
   return {name:'rura prosta (klasa rury/kolanka)',geo:g,force:1,pipeClass:1,how:'klasa rury/kolanka: rura Ø'+Math.round(D)+'×'+t+' L'+Math.round(L)+' mm z obrysu przodu · APPROXIMATE · NEEDS_REVIEW'}}
  function filterC(C,m,THREE){if(!isPipe(m)||!Array.isArray(C))return C;var P=C.filter(function(c){return c&&PIPE.test((c.name||'')+' '+(c.isoElbow?'kolano':''))});
-  if(!P.length){var fb=tubeFallback(THREE,m);if(fb)P=[fb]}if(!P.length)return C;P.forEach(function(c,i){c.force=i===0?1:0});m.pipeDropped=C.length-P.length;return P}
+  if(!P.length){var fb=null;try{fb=tubeFallback(THREE,m)}catch(e){}if(fb)P=[fb]}if(!P.length){P=C.filter(function(c){return c&&c.force&&!/blach|profil|płyt|plyt|żebr|zebr|pudeł/i.test(c.name||'')});if(typeof console!=='undefined')console.warn('pipeclass: brak kandydata rurowego i tubeFallback – bez blach',P.length);if(!P.length){m.pipeDropped=C.length;m.pipeNoCand=1;return C.filter(function(c){return c&&!/blach|profil|płyt|plyt/i.test(c.name||'')}).length?C.filter(function(c){return c&&!/blach|profil|płyt|plyt/i.test(c.name||'')}):C}}P.forEach(function(c,i){c.force=i===0?1:0});m.pipeDropped=C.length-P.length;return P}
  var api={LABEL:LABEL,HINT:HINT,isPipe:isPipe,setHint:setHint,filterC:filterC,tubeFallback:tubeFallback};
  if(typeof module!=='undefined'&&module.exports){module.exports=api;return}
  root.__pipeClass=api;
