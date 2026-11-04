@@ -57,7 +57,9 @@ function wrap(){var pm=window.p2Mid;if(!pm||pm.__vlmFirst)return;
  var w=function(info){if(!on())return pm.apply(this,arguments);var self=this,args=arguments;window.__p2Gate=1;/* P2 obowiązkowe */
   return interpret(info).then(function(I){window.__vlmFirstLast=I;window.__p2Suggest=I;var ui=window.p2CheckpointUI;
    if(ui)window.p2CheckpointUI=function(fm){fm.vlmFirst=I;if(I&&!I.blocker&&TK[I.typ]){fm.vlmKind=TK[I.typ];fm.vlm={typ:I.typ,kind:TK[I.typ],pewnosc:I.pewnosc>=.7?'wysoka':I.pewnosc>=.4?'srednia':'niska',niepewny:I.pewnosc<.4,zrodlo:'vlmfirst'}}
-    return ui(fm).then(function(r){var p=fm.p2;if(p){p.vlmFirst={typ:I&&I.typ||null,zatwierdzono:!!(I&&TK[I.typ]&&p.kind===TK[I.typ]),poprawiono:!!(I&&TK[I.typ]&&p.kind!==TK[I.typ]),blocker:I&&I.blocker||null};
+    var BN=null;if(I&&I.blocker&&typeof document!=='undefined'&&document.body){try{BN=document.createElement('div');BN.id='vlmFirstBlocker';BN.setAttribute('role','alert');BN.style.cssText='position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:2147483647;background:#b00020;color:#fff;padding:8px 14px;border-radius:8px;font:600 14px system-ui;max-width:92vw;box-shadow:0 2px 8px rgba(0,0,0,.4)';BN.textContent='⚠ VLM niedostępny — brak Ollamy / błąd połączenia. Zatwierdź P2 ręcznie. ('+String(I.blocker).slice(0,120)+')';document.body.appendChild(BN)}catch(e){BN=null}}
+    var P=ui(fm);if(BN&&P&&P.then)P.then(function(){BN.remove&&BN.remove()},function(){BN.remove&&BN.remove()});
+    return P.then(function(r){var p=fm.p2;if(p){p.vlmFirst={typ:I&&I.typ||null,zatwierdzono:!!(I&&TK[I.typ]&&p.kind===TK[I.typ]),poprawiono:!!(I&&TK[I.typ]&&p.kind!==TK[I.typ]),blocker:I&&I.blocker||null};
      if(!p.profile&&I&&TP[I.typ])p.profile=TP[I.typ];var g=I&&!I.blocker&&I.glowny_rzut,S=info&&info.sheet,W=S&&(S.naturalWidth||S.width),H=S&&(S.naturalHeight||S.height);
      p.vlmFirst.bbox=I&&I.bbox||null;
      /* elementy: tylko zwalidowane bboxy, jako APPROXIMATE + NEEDS_REVIEW (do potwierdzenia w P2; bez budowania bryły) */
