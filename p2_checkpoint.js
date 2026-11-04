@@ -7,7 +7,7 @@ function T(s){var L;try{L=(location.hash.match(/lang=(en|pl|de)/)||[])[1]||local
 window.__p2T=T;
 var CHIPS=['rzut główny','rura','płyta','profil','kątownik'],MK='oria_p2_memory';
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
-var __lf='';try{document.addEventListener('change',function(e){var t=e.target;if(t&&t.type==='file'){var f=t.files&&t.files[0];__lf=f?f.name+'#'+f.size+'#'+(f.lastModified||0):''}},true)}catch(e){}
+var __lf='';try{document.addEventListener('change',function(e){var t=e.target;if(t&&t.type==='file'){var f=t.files&&t.files[0];__lf=f?f.name+'#'+f.size+'#'+(f.lastModified||0):'';/* t974: nowy plik → stare viewQ/graf approx poprzedniego rysunku nie mogą trafić do P2 */try{window.__viewAsmLast=null;if(window.__approxOn)window.__approxEngGraph=null}catch(_){}}},true)}catch(e){}
 function fid(){if(__lf)return __lf;try{var fs=[].slice.call(document.querySelectorAll('input[type=file]'));for(var i=0;i<fs.length;i++){var f=fs[i].files&&fs[i].files[0];if(f)return f.name+'#'+f.size+'#'+(f.lastModified||0)}}catch(e){}return ''}
 function fp(m){var s=(m.size||[]).map(function(v){return Math.round((+v||0)/50)*50}).join('x');var g=s+'|v'+((m.views||[]).length||0);var id=m.fileId||fid();return id?'f:'+id+'|'+g:g}
 function mem(){try{return JSON.parse(localStorage.getItem(MK)||'{}')}catch(e){return{}}}
@@ -53,7 +53,9 @@ window.p2Checkpoint=function(m){
    var ok=app.querySelector('#p2ok');if(ok)ok.onclick=finish;}
   function keepN(){var c=app.querySelector('#p2c');if(c)st.nParts=Math.max(1,parseInt(c.value)||1);var tk=app.querySelector('#p2tk');if(tk){var v=parseFloat(String(tk.value).replace(',','.'));st.thick=v>0?v:null}}
   function finish(){
-   m.p2={kind:st.kindAuto?'auto':st.kind==='Inne'?'Inne: '+st.other:st.kind,profile:st.profile,iso:!!st.iso,nParts:st.nParts,thick:st.thick||null,marks:st.marks.slice(),qtyHint:QM&&QM.qty||null,matHint:QM&&QM.mat||null,profHint:QM&&QM.prof||null,bomHint:QM&&QM.bom&&QM.bom.length?QM.bom:null,aiFill:Object.keys(AIF).length?AIF:null};
+   m.p2={kind:st.kindAuto?'auto':st.kind==='Inne'?'Inne: '+st.other:st.kind,profile:st.profile,iso:!!st.iso,nParts:st.nParts,thick:st.thick||null,marks:st.marks.slice(),qtyHint:QM&&QM.qty||null,matHint:QM&&QM.mat||null,matSrc:QM&&QM.matSrc||null,profHint:QM&&QM.prof||null,bomHint:QM&&QM.bom&&QM.bom.length?QM.bom:null,bomItems:(function(){try{var C=window.__qtyMat&&window.__qtyMat.bomCheck;if(!C||!QM||!QM.bom||!QM.bom.length)return null;return C(QM.bom)}catch(e){return null}})(),aiFill:Object.keys(AIF).length?AIF:null};
+   /* t979: materiał całości — BOM z ≥2 gatunkami → matHint null + matMixed (bez zgadywania) */
+   try{var MF=window.__qtyMat&&window.__qtyMat.matFinal;if(MF&&m.p2.matHint){var mf=MF(QM,m.p2.bomItems);m.p2.matHint=mf.mat;m.p2.matSrc=mf.src;if(mf.mixed)m.p2.matMixed=mf.mixed}}catch(e){}
    /* t968: pytania view_assembler (?viewc=1) → m.p2.viewQ, same dane; OFF = brak klucza; pick użytkownika nietknięty */
    try{if(window.OriaViewAssembler)window.__p2LastKey=key;var VA=window.OriaViewAssembler&&window.__viewAsmLast;if(VA&&VA.questions&&VA.questions.length){var OV=window.OriaViewAssembler;m.p2.viewQ=OV.mergeQ?OV.mergeQ(VA.questions,window.__approxOn&&(window.__approxEngGraph||window.__approxGraph)||null,OV.loadPicks(key)):VA.questions.map(function(q){return Object.assign({},q)});if(!m.p2.viewQ.length)delete m.p2.viewQ;}/* t969: scalenie z approx + pamięć pick */}catch(e){}
    var k=kindMap(st);if(k){m.kindFrom=m.kind;m.kind=k;}

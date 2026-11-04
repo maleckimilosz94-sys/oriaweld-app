@@ -10,6 +10,7 @@ var PL={
  'approx.q_height':'Podaj całkowitą wysokość (H) w mm. Szacunek {H} (z izometrii, brak w OCR).',
  'approx.q_height_ocr':'Podaj całkowitą wysokość (H) w mm. OCR odczytał {read}, z izometrii wynika ok. {H} – czy to {H}?',
  'approx.q_depth':'Podaj całkowitą głębokość (D) w mm. Szacunek {D}.',
+ 'approx.q_thick':'Grubość blachy przyjęta {t} mm (brak w OCR). Podaj grubość w mm.',
  'approx.a.confirm':'Potwierdź','approx.a.reject':'Odrzuć','approx.a.leave_unknown':'Nie wiem',
  'approx.a.change_type':'Zmień typ','approx.a.move':'Przesuń','approx.a.rotate':'Obróć',
  'approx.badge':'PRZYBLIŻONY','approx.p2.pending':'Pozostało pytań: {n}','approx.p2.done':'Wszystkie pytania odpowiedziane'};

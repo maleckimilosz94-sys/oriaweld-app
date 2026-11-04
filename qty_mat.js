@@ -82,6 +82,12 @@ function fmtBom(b,T){T=T||function(s){return s};var n=String(b.name||'').trim(),
 G.__qtyMat.fmtBom=fmtBom;
 G.__qtyRows=rowsText;
 G.__qtyMat.rowsText=rowsText;G.__qtyMat.bomCells=bomCells;
+/* t976: kontrola struktury BOM — OK tylko gdy poz. unikalne i ciągłe 1..N, każda qty całkowita 1..200. Ilość całego złożenia NIGDY z BOM (asmQty zawsze null). Inaczej INCOMPLETE. */
+function bomCheck(b){if(!b||!b.length)return {status:'INCOMPLETE',why:'brak wierszy BOM',items:null,asmQty:null};var P={},mx=0;for(var i=0;i<b.length;i++){var r=b[i];if(!r||P[r.pos]||!(r.qty>=1&&r.qty<=200)||r.qty%1)return {status:'INCOMPLETE',why:'poz. zdublowana/qty niepewna',items:null,asmQty:null};P[r.pos]=1;if(r.pos>mx)mx=r.pos}if(mx!==b.length)return {status:'INCOMPLETE',why:'luka w numeracji poz. (1..'+mx+', jest '+b.length+')',items:null,asmQty:null};return {status:'OK',why:null,items:b.slice().sort(function(x,y){return x.pos-y.pos}).map(function(r){return {pos:r.pos,name:r.name,qty:r.qty,mat:r.mat||null}}),asmQty:null}}
+G.__qtyMat.bomCheck=bomCheck;
+/* t979: materiał całości. Jeden jasny gatunek z OCR → hint; gdy BOM (status OK) ma ≥2 różne gatunki → całość mieszana: mat null + lista matMixed (bez zgadywania jednego). */
+function matFinal(QM,bc){var r={mat:QM&&QM.mat||null,src:QM&&QM.matSrc||null,mixed:null};if(bc&&bc.status==='OK'&&bc.items){var u={};bc.items.forEach(function(i){if(i.mat)u[i.mat]=1});var k=Object.keys(u);if(k.length>=2){r.mat=null;r.src='BOM: różne gatunki';r.mixed=k.sort()}}return r}
+G.__qtyMat.matFinal=matFinal;
 /* t966: ilość z komórki tabeli — kotwica na etykiecie (Menge/Anzahl/Stückzahl/Qty/Quantity/Ilość/Szt.), wartość: czysta liczba całkowita 1..500 w tym samym wierszu (prawo) albo w tej samej kolumnie (pod). Tylko 1 etykieta i 1 kandydat; Blatt/Sheet/von nigdy. */
 var QL=/^(menge|anzahl|st(?:ü|u|ue)ckzahl|stk\.?|qty\.?|quantity|ilo(?:ść|sc)|szt\.?|pcs\.?)\s*[:.]?\s*(\d{1,3})?$/i;
 function qtyCell(B){B=(B||[]).filter(function(b){return b&&b.text&&b.w!=null});var labs=B.filter(function(b){return QL.test(String(b.text).trim())});if(labs.length!==1)return null;var L=labs[0],m=String(L.text).trim().match(QL);

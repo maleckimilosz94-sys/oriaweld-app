@@ -30,6 +30,8 @@ function fromEngine(m,o){o=o||{};m=m||{};var pk=(m.pick&&m.pick.name)||o.pick||'
   text:hh?'Podaj całkowitą wysokość (H) w mm. OCR odczytał '+hh.read+', z izometrii wynika ok. '+H+' – czy to '+H+'?':'Podaj całkowitą wysokość (H) w mm. Szacunek '+H+' (z izometrii, brak w OCR).',reason:'H estimated'+(hh?' · OCR '+hh.read:'')});
   if(Q.length>=5){var ir=Q.map(function(q){return q.id}).indexOf('q_r16');if(ir>=0)Q.splice(ir,1);}}
  if(od.depth.status!=='confirmed'&&Q.length<5)Q.push({id:'q_depth',i18n:'approx.q_depth',params:{D:D},kind:'depth',about:'overall.depth',text:'Podaj całkowitą głębokość (D) w mm. Szacunek '+D+'.',reason:'D z kołnierzy'});
+ /* t978: grubość domyślna (brak o.t i brak w OCR) → pytanie, najniższy priorytet (nie wypiera innych). */
+ var _pm=M.filter(function(x){return x.plate})[0];if(_pm&&!n(o.t)&&!has(t)&&Q.length<5)Q.push({id:'q_thick',i18n:'approx.q_thick',params:{t:t},kind:'depth',about:_pm.id,text:'Grubość blachy przyjęta '+t+' mm (brak w OCR). Podaj grubość w mm.',reason:'t domyślne'});
  return {schema_version:'0.1',mode:'approximate',units:'mm',drawing:{id:o.id||m.file||'engine',views:[{id:'v_iso',kind:'iso'},{id:'v_side',kind:'side'}]},
   coordinate_system:{x:'width',y:'height',z:'depth',origin:'left-bottom-front'},overall_dimensions:od,
   model_type:{value:bent?'blacha gięta z oknami':'płyta',confidence:0.5,source:'iso',alternatives:bent?['płyta z oknami']:[]},nodes:[],members:M,relations:[],conflicts:[],questions:Q.slice(0,5),decisions:[],
@@ -38,7 +40,8 @@ function fromEngine(m,o){o=o||{};m=m||{};var pk=(m.pick&&m.pick.name)||o.pick||'
 function applyDecision(g,d){var S=root.OriaSG,G=JSON.parse(JSON.stringify(g));var prev={};
  var mo=/^overall\.(width|height|depth)$/.exec(d.q),q=(G.questions||[]).filter(function(x){return x.id===d.q})[0],k=mo?mo[1]:(q&&/^overall\./.test(q.about)?q.about.slice(8):null);
  if(k){prev[k]=G.overall_dimensions[k];if(d.action!=='reject'&&d.action!=='leave_unknown'&&n(d.answer))G.overall_dimensions[k]={value:n(d.answer),status:'confirmed',source:'user_p2'};}
- var mem=q&&(G.members||[]).filter(function(x){return x.id===q.about})[0];
+ if(d.q==='q_thick'&&d.action!=='reject'&&d.action!=='leave_unknown'&&n(d.answer)){var tv=n(d.answer);prev.thickness=[];(G.members||[]).forEach(function(x){if(x.plate){prev.thickness.push(x.plate.thickness);x.plate.thickness=tv;x.plate.source='user_p2';if(x.section){x.section.dims=[tv];x.section.status='confirmed';x.section.source='user_p2'}}})}
+ var mem=q&&d.q!=='q_thick'&&(G.members||[]).filter(function(x){return x.id===q.about})[0];
  if(mem){prev.status=mem.status;prev.verify=mem.verify;var A=d.action||(d.answer==='yes'?'confirm':d.answer==='no'?'reject':'leave_unknown');
   if(A==='confirm'){mem.status='confirmed';mem.verify='confirmed'}else if(A==='reject'){mem.verify='rejected'}else if(A==='leave_unknown'){mem.verify='left_unknown';mem.status='unknown'}
   else if(A==='change_type'){if(d.role)mem.role=d.role;if(d.geom)mem.geom=d.geom;mem.status='confirmed';mem.verify='changed'}
