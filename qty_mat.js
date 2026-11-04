@@ -47,6 +47,12 @@ function extract(txt){var t=norm(txt),r={qty:null,qtySrc:null,mat:null,matSrc:nu
  var uq=uniq(qs),kq=Object.keys(uq);r.raw.qty=uq;if(kq.length===1){r.qty=+kq[0];r.qtySrc='OCR „szt/Stück” ×'+uq[kq[0]]}else if(kq.length>1)r.qtySrc='konflikt: '+kq.join('/');
  var th=[],m,re=/\b(?:t|s|dicke|grubo(?:ść|sc)|blech|thk|thickness)\s?[=:]\s?(\d{1,2}(?:[.,]\d)?)\s?(?:mm)?\b/gi;while((m=re.exec(t)))th.push(+m[1].replace(',','.'));
  var ut=uniq(th),kt=Object.keys(ut);if(kt.length===1&&+kt[0]>0&&+kt[0]<=50){r.thick=+kt[0];r.thickSrc='OCR t='}
+ /* t964: profil zamknięty z OCR (RHS/SHS/RK a×b×t). Fragment „120x” + pełne „20x60x3 RHS” → 120 tylko gdy fragment KOŃCZY się na a (zgubiona cyfra OCR). Konflikt → brak. */
+ var pf=[],pm,pre=/(?:\b(RHS|SHS|RK)\s?)?(\d{2,3})?\s?[x×]\s?(\d{2,3})\s?[x×]\s?(\d{1,2}(?:[.,]\d)?)(?:\s?(RHS|SHS|RK)(?!\s?\d{2,3}\s?[x×]))?\b/gi;while((pm=pre.exec(t))){if(!(pm[1]||pm[5]))continue;pf.push({a:pm[2]?+pm[2]:null,b:+pm[3],t:+pm[4].replace(',','.'),k:(pm[1]||pm[5]).toUpperCase()})}
+ if(pf.length){var fr=[],fm,fre=/\b(\d{2,4})\s?[x×](?!\s?\d)/g;while((fm=fre.exec(t)))fr.push(fm[1]);
+  pf.forEach(function(p){var c=fr.filter(function(f){return p.a==null||(f.length>String(p.a).length&&f.slice(-String(p.a).length)===String(p.a))});if(c.length&&new Set(c).size===1){p.a=+c[0];p.fix=1}});
+  var ok=pf.filter(function(p){return p.a>0&&p.b>0&&p.t>0&&p.t<Math.min(p.a,p.b)/2}),ks=uniq(ok.map(function(p){return p.k+' '+Math.max(p.a,p.b)+'×'+Math.min(p.a,p.b)+'×'+p.t})),kk=Object.keys(ks);
+  if(kk.length===1){r.prof=kk[0];r.profSrc='OCR profil'+(ok.some(function(p){return p.fix})?' (scalony fragment)':'')}else if(kk.length>1)r.profSrc='konflikt: '+kk.join('/')}
  r.bom=bom(txt);if(r.bom.length)r.bomSrc='OCR tabela BOM ('+r.bom.length+' poz.)';
  return r}
 G.__qtyMat={extract:extract,bom:bom,rowsText:null};
@@ -66,7 +72,7 @@ function cellThick(info){var B=[].concat(info.allBoxes||[],info.sheetBoxes||[]).
  return {lab:L,raw:raw,clean:clean?+clean[1].replace(',','.'):null,dig:dig,crop:{x:L.x-L.w*0.1,y:L.y-L.h*0.5,w:L.w*3.4,h:L.h*2}}}
 function judge(c,v){if(v==null||!(v>0&&v<=50))return null;if(c.clean!=null)return Math.abs(c.clean-v)<1e-6?v:null;
  if(!c.dig)return null;var vd=String(v).replace('.','');var vd1=(+v).toFixed(1).replace('.','');return (c.dig===vd||c.dig===vd1||+c.dig===v)?v:null}
-G.__qtyMat.cellThick=cellThick;G.__qtyMat.judge=judge;
+G.__qtyMat.cellThick=cellThick;G.__qtyMat.judge=judge;G.__qtyMat.dickeParse=dickeParse;
 /* .pre_bomword: format pozycji BOM w linii ★ — grubość „N mm” oddzielnie od „N szt.” (Wizja/Grafika 1600). Tylko string, logika OCR bez zmian. */
 function fmtBom(b,T){T=T||function(s){return s};var n=String(b.name||'').trim(),w=n.split(' ')[0],th=null,m;
  if(/^(bl[ao]ch|p[łl]yt|p[łl]askownik|blech|plate|flach)/i.test(w)&&(m=/\s(\d{1,2}(?:[.,]\d)?)\s*(?:mm)?$/.exec(n))&&!/[×x*]\s*\d+\s*$/i.test(n)){th=m[1].replace(',','.');n=w}
@@ -76,6 +82,16 @@ function fmtBom(b,T){T=T||function(s){return s};var n=String(b.name||'').trim(),
 G.__qtyMat.fmtBom=fmtBom;
 G.__qtyRows=rowsText;
 G.__qtyMat.rowsText=rowsText;G.__qtyMat.bomCells=bomCells;
+/* t966: ilość z komórki tabeli — kotwica na etykiecie (Menge/Anzahl/Stückzahl/Qty/Quantity/Ilość/Szt.), wartość: czysta liczba całkowita 1..500 w tym samym wierszu (prawo) albo w tej samej kolumnie (pod). Tylko 1 etykieta i 1 kandydat; Blatt/Sheet/von nigdy. */
+var QL=/^(menge|anzahl|st(?:ü|u|ue)ckzahl|stk\.?|qty\.?|quantity|ilo(?:ść|sc)|szt\.?|pcs\.?)\s*[:.]?\s*(\d{1,3})?$/i;
+function qtyCell(B){B=(B||[]).filter(function(b){return b&&b.text&&b.w!=null});var labs=B.filter(function(b){return QL.test(String(b.text).trim())});if(labs.length!==1)return null;var L=labs[0],m=String(L.text).trim().match(QL);
+ var ok=function(n){return n>=1&&n<=500};if(m[2]){return ok(+m[2])?{qty:+m[2],src:'OCR komórka „'+L.text+'”'}:null}
+ var cy=L.y+L.h/2,cx=L.x+L.w/2,isN=function(b){return b!==L&&/^\d{1,3}$/.test(String(b.text).trim())&&!/blatt|sheet|von|of/i.test(b.text)};
+ var row=B.filter(function(b){return isN(b)&&Math.abs(b.y+b.h/2-cy)<L.h*0.6&&b.x>=L.x+L.w*0.6&&b.x<L.x+L.w*3}).sort(function(a,b){return a.x-b.x});
+ var col=B.filter(function(b){return isN(b)&&Math.abs(b.x+b.w/2-cx)<Math.max(L.w*0.6,b.w)&&b.y>L.y+L.h*0.5&&b.y<L.y+L.h*3}).sort(function(a,b){return a.y-b.y});
+ var c=row.length?row[0]:(col.length===1?col[0]:null);if(row.length&&col.length&&String(row[0].text).trim()!==String(col[0].text).trim())return null;
+ if(!c||!ok(+c.text))return null;return {qty:+String(c.text).trim(),src:'OCR komórka „'+L.text+'” ('+(row.length?'wiersz':'kolumna')+')'}}
+G.__qtyMat.qtyCell=qtyCell;
 if(typeof window==='undefined')return;
 function off(){try{return window.__noQtyHint||/[?&#]qty=0/.test(location.search+location.hash)}catch(e){return 1}}
 function txt(info){try{var a=[].concat(info.allBoxes||[],info.sheetBoxes||[]).map(function(b){return b&&b.text||''});if(info.title&&info.title.text)a.push(info.title.text);(info.views||[]).forEach(function(v){(v&&v.boxes||[]).forEach(function(b){a.push(b&&b.text||'')})});return a.join(' ')+' '+(window.__vlmOcrTextUser||'')}catch(e){return ''}}
@@ -85,11 +101,20 @@ function vlmCell(info,c){try{if(!(window.__vlmOn||/[?&#]vlm=1/.test(location.sea
  cv.width=Math.round(c.crop.w*k*sc);cv.height=Math.round(c.crop.h*k*sc);var x=cv.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(im,c.crop.x*k,c.crop.y*k,c.crop.w*k,c.crop.h*k,0,0,cv.width,cv.height);
  var _du=cv.toDataURL('image/png');window.__cellCrop=_du;var b64=_du.split(',')[1],ac=window.AbortController?new AbortController():null,to=setTimeout(function(){ac&&ac.abort()},120000);
  return fetch((window.__vlmUrl||'http://127.0.0.1:11434')+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:ac&&ac.signal,body:JSON.stringify({model:window.__vlmModel||'qwen3-vl:4b-instruct',stream:false,format:"json",options:{temperature:0,num_ctx:8192},messages:[{role:"user",content:'This is a crop of a table cell row from a technical drawing title block. Read the label and its numeric value exactly as printed. Reply JSON {"label":str,"value":str or null}. If unreadable, value null.',images:[b64]}]})}).then(function(r){return r.json()}).then(function(j){clearTimeout(to);var o=JSON.parse(j.message.content);window.__cellVlm=o;if(!o||!/dicke|thick|grubo|stärke/i.test(o.label||''))return null;var v=parseFloat(String(o.value||'').replace(',','.'));return isFinite(v)?v:null}).catch(function(e){clearTimeout(to);console.log('qty cellVlm err '+e);return null})}catch(e){return Promise.resolve(null)}}
+/* t965: ?dicke=1 / __dickeOcr — zawężony re-OCR (PP-OCR silnika) komórki wartości obok etykiety Dicke; przyjmij tylko czysty zapis x.y zgodny cyframi z OCR ogólnym (judge). OFF domyślnie. */
+function dickeOn(){try{return !!(window.__dickeOcr||/[?&#]dicke=1/.test(location.search+location.hash))}catch(e){return false}}
+function dickeParse(arr){var v=[];(arr||[]).forEach(function(o){var m=String(o&&o.text||'').trim().match(/^(\d{1,2}[.,]\d{1,2})(?:\s*mm)?$/i);if(m)v.push(+m[1].replace(',','.'))});var u=uniq(v),k=Object.keys(u);return k.length===1?+k[0]:null}
+function dickeCell(info,c){try{var E=window.RamaEngine;if(!dickeOn()||!E||!E.ppocr||!info.sheet)return Promise.resolve(null);var im=info.sheet,k=(im.naturalWidth||im.width)/(info.sheetW||im.naturalWidth||im.width),L=c.lab,all=[],raw=[],q=Promise.resolve();
+ [[2.0,2.45,0],[1.9,2.45,1],[2.1,2.44,0]].forEach(function(v){q=q.then(function(){var r={x:L.x+L.w*v[0],y:L.y-L.h*0.3,w:L.w*(v[1]-v[0]),h:L.h*1.6},sc=4,cv=document.createElement('canvas');cv.width=Math.round(r.w*k*sc);cv.height=Math.round(r.h*k*sc);var x=cv.getContext('2d');x.imageSmoothingQuality='high';x.drawImage(im,r.x*k,r.y*k,r.w*k,r.h*k,0,0,cv.width,cv.height);
+  if(v[2]){var d=x.getImageData(0,0,cv.width,cv.height),D=d.data,lo=255,hi=0,i;for(i=0;i<D.length;i+=4){var g=(D[i]+D[i+1]+D[i+2])/3;if(g<lo)lo=g;if(g>hi)hi=g}var sp=Math.max(1,hi-lo);for(i=0;i<D.length;i+=4){var g2=((D[i]+D[i+1]+D[i+2])/3-lo)*255/sp;D[i]=D[i+1]=D[i+2]=g2}x.putImageData(d,0,0)}
+  (window.__dickeCrops=window.__dickeCrops||[]).push(cv.toDataURL('image/png'));return E.ppocr(cv).then(function(o){(o||[]).forEach(function(b){raw.push(b.text);all.push(b)})}).catch(function(e){raw.push('err '+e)})})});
+ return q.then(function(){window.__dickeRaw=raw;return dickeParse(all)})}catch(e){return Promise.resolve(null)}}
+
 function cellStep(info,s){if(window.__noCellOcr||!s||s.thick)return Promise.resolve();var c;try{c=cellThick(info||{})}catch(e){return Promise.resolve()}window.__cellLast=c&&{raw:c.raw,clean:c.clean,dig:c.dig};if(!c||!c.lab)return Promise.resolve();
  if(c.clean!=null&&c.clean>0&&c.clean<=50){s.thick=c.clean;s.thickSrc='OCR komórka Dicke';return Promise.resolve()}
- if(!c.dig)return Promise.resolve();return vlmCell(info,c).then(function(v){var t=judge(c,v);window.__cellLast.vlm=v;window.__cellLast.ok=t;if(t!=null){s.thick=t;s.thickSrc='komórka Dicke: VLM '+v+' = OCR „'+c.dig+'”'}})}
+ if(!c.dig)return Promise.resolve();return dickeCell(info,c).then(function(d){var t=judge(c,d);window.__cellLast.dicke=d;if(t!=null){s.thick=t;s.thickSrc='OCR zawężony komórka Dicke „'+d+'” = „'+c.dig+'”';return}return vlmCell(info,c).then(function(v){var t=judge(c,v);window.__cellLast.vlm=v;window.__cellLast.ok=t;if(t!=null){s.thick=t;s.thickSrc='komórka Dicke: VLM '+v+' = OCR „'+c.dig+'”'}})})}
 function wrap(){var pm=window.p2Mid;if(!pm||pm.__qty||window.__qtyWrapped)return;window.__qtyWrapped=1;
- var w=function(info){if(off())return pm.apply(this,arguments);var s=null;try{var _tx=txt(info||{});window.__qtyTxt=_tx;s=extract(_tx);try{var _rt=rowsText([].concat((info||{}).allBoxes||[],(info||{}).sheetBoxes||[]));window.__qtyRowsTxt=_rt;if(!s.bom.length){var _b=bomCells(_rt);if(!_b.length)_b=bom(_rt);if(_b.length){s.bom=_b;s.bomSrc='OCR wiersze tabeli ('+_b.length+' poz.)'}}}catch(e){}s.ms=0;window.__qtyLast=s}catch(e){}
+ var w=function(info){if(off())return pm.apply(this,arguments);var s=null;try{var _tx=txt(info||{});window.__qtyTxt=_tx;s=extract(_tx);try{var _rt=rowsText([].concat((info||{}).allBoxes||[],(info||{}).sheetBoxes||[]));window.__qtyRowsTxt=_rt;if(!s.bom.length){var _b=bomCells(_rt);if(!_b.length)_b=bom(_rt);if(_b.length){s.bom=_b;s.bomSrc='OCR wiersze tabeli ('+_b.length+' poz.)'}}}catch(e){}try{if(!s.qty&&!s.qtySrc){var _qc=qtyCell([].concat((info||{}).allBoxes||[],(info||{}).sheetBoxes||[]));if(_qc){s.qty=_qc.qty;s.qtySrc=_qc.src}}}catch(e){}s.ms=0;window.__qtyLast=s}catch(e){}
   var self=this,args=arguments;return cellStep(info,s).then(function(){
   var ui=window.p2CheckpointUI;if(s&&ui&&(s.qty||s.mat||s.thick||(s.bom&&s.bom.length))){window.p2CheckpointUI=function(fm){fm.qtyMat=s;return ui(fm)}}
   return pm.apply(self,args).then(function(r){window.p2CheckpointUI=ui;return r},function(e){window.p2CheckpointUI=ui;throw e})})};

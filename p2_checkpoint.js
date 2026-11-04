@@ -53,7 +53,9 @@ window.p2Checkpoint=function(m){
    var ok=app.querySelector('#p2ok');if(ok)ok.onclick=finish;}
   function keepN(){var c=app.querySelector('#p2c');if(c)st.nParts=Math.max(1,parseInt(c.value)||1);var tk=app.querySelector('#p2tk');if(tk){var v=parseFloat(String(tk.value).replace(',','.'));st.thick=v>0?v:null}}
   function finish(){
-   m.p2={kind:st.kindAuto?'auto':st.kind==='Inne'?'Inne: '+st.other:st.kind,profile:st.profile,iso:!!st.iso,nParts:st.nParts,thick:st.thick||null,marks:st.marks.slice(),qtyHint:QM&&QM.qty||null,matHint:QM&&QM.mat||null,bomHint:QM&&QM.bom&&QM.bom.length?QM.bom:null,aiFill:Object.keys(AIF).length?AIF:null};
+   m.p2={kind:st.kindAuto?'auto':st.kind==='Inne'?'Inne: '+st.other:st.kind,profile:st.profile,iso:!!st.iso,nParts:st.nParts,thick:st.thick||null,marks:st.marks.slice(),qtyHint:QM&&QM.qty||null,matHint:QM&&QM.mat||null,profHint:QM&&QM.prof||null,bomHint:QM&&QM.bom&&QM.bom.length?QM.bom:null,aiFill:Object.keys(AIF).length?AIF:null};
+   /* t968: pytania view_assembler (?viewc=1) → m.p2.viewQ, same dane; OFF = brak klucza; pick użytkownika nietknięty */
+   try{if(window.OriaViewAssembler)window.__p2LastKey=key;var VA=window.OriaViewAssembler&&window.__viewAsmLast;if(VA&&VA.questions&&VA.questions.length){var OV=window.OriaViewAssembler;m.p2.viewQ=OV.mergeQ?OV.mergeQ(VA.questions,window.__approxOn&&(window.__approxEngGraph||window.__approxGraph)||null,OV.loadPicks(key)):VA.questions.map(function(q){return Object.assign({},q)});if(!m.p2.viewQ.length)delete m.p2.viewQ;}/* t969: scalenie z approx + pamięć pick */}catch(e){}
    var k=kindMap(st);if(k){m.kindFrom=m.kind;m.kind=k;}
    if(!st.kindAuto){m.kindWhy=['P2 użytkownik','wybrane ręcznie'];m.kindConf=100;m.autoMixed=false;}
    try{var M2=mem(),rec={kind:st.kind,other:st.other,profile:st.profile,iso:st.iso,nParts:st.nParts,t:Date.now()};M2[key]=rec;M2.__last=rec;localStorage.setItem(MK,JSON.stringify(M2))}catch(e){}
