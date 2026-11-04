@@ -63,10 +63,14 @@ window.p2Checkpoint=function(m){
    /* t988: jogfix ON → jogQ w tym samym kanale co viewQ: merge do m.p2.viewQ (dedupe po id) + do pytań grafu approx (questions[], kind 'depth' dla walidatora, jkind=oryginał), żeby istniejący handler decyzji wołał __approxApply(q_jog_h/q_jog_off/q_r16_vs_r1_6). OFF = brak klucza/pytań. */
    try{var JF8=!!window.__a3JogFix||/[?&#]jogfix=1\b/.test(location.search+location.hash);if(JF8&&m.p2.jogQ&&m.p2.jogQ.length){var G8=window.__approxOn&&(window.__approxEngGraph||window.__approxGraph)||null,dn={};if(G8)(G8.decisions||[]).forEach(function(d){dn[d.q]=1});var VQ=m.p2.viewQ||[],has={};VQ.forEach(function(q){has[q.id]=1});m.p2.jogQ.forEach(function(q){if(has[q.id]||dn[q.id])return;has[q.id]=1;VQ.push(Object.assign({},q,{src:'jogfix',text:q.text||q.q}))});if(VQ.length)m.p2.viewQ=VQ;
     if(G8){G8.questions=G8.questions||[];var gq={};G8.questions.concat(G8.answered||[]).forEach(function(q){gq[q.id]=1});m.p2.jogQ.forEach(function(q){if(gq[q.id]||dn[q.id])return;G8.questions.push({id:q.id,kind:'depth',jkind:q.kind,unit:q.unit,text:q.text||q.q,reason:'t988 jogfix',val:q.val})});if(G8.p2)G8.p2.pending=G8.questions.length;}}}catch(e){}
+   function cont(){
    var k=kindMap(st);if(k){m.kindFrom=m.kind;m.kind=k;}
    if(!st.kindAuto){m.kindWhy=['P2 użytkownik','wybrane ręcznie'];m.kindConf=100;m.autoMixed=false;}
    try{var M2=mem(),rec={kind:st.kind,other:st.other,profile:st.profile,iso:st.iso,nParts:st.nParts,t:Date.now()};M2[key]=rec;M2.__last=rec;localStorage.setItem(MK,JSON.stringify(M2))}catch(e){}
    app.innerHTML='<h1>'+T('⚡ Pełny automat')+'</h1><div id="aprog"><p class="aprog"><span class="spin"></span> '+T('Przebudowuję model…')+'</p></div>';
    setTimeout(function(){try{if(typeof rebuild==='function'&&k&&m.V)rebuild(m)}catch(e){console.warn('p2 rebuild',e);m.p2.rebuildErr=String(e&&e.message||e)}try{if(window.__autoResult&&typeof sum2==='function'){window.__autoResult=sum2(m);}if(window.__autoResult)window.__autoResult.p2=m.p2}catch(e){}res(m)},40);}
+   /* t989/t990: ?p2q=1 OFF → lista viewQ/jogQ (p2_viewq_ui) PO merge; OFF = cont() */
+   var P2Q=/[?&#]p2q=1\b/.test(location.search+location.hash)||!!window.__p2q;
+   if(P2Q&&typeof window.p2ViewQAsk==='function'&&m.p2.viewQ&&m.p2.viewQ.length){window.p2ViewQAsk(m).then(cont).catch(function(e){console.warn('p2q',e);cont()})}else cont();}
   draw();});
 };})();

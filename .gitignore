@@ -38,13 +38,16 @@
 !/iso_elbow.js
 !/qty_mat.js
 !/vlm_typ.js
+!/p2_viewq_ui.js
 !/p2_aifill.js
 !/pewnosc152.js
 !/wizja155.js
 !/element_classifier.js
 !/view_assembler.js
 !/approx/
-!/approx/
+!/f2/
+/f2/*
+!/f2/*.sheet.json
 /approx/test_*
 /approx/fixtures/
 /approx/docs/
