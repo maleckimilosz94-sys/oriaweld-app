@@ -16,7 +16,7 @@ function type(q){if(q.id==='q_r16_vs_r1_6')return {t:'chips',o:['R1.6','R16']};
  if(o.length)return {t:'chips',o:o};return {t:'yn'}}
 function list(m){var s={};return ((m&&m.p2&&m.p2.viewQ)||[]).filter(function(q){if(!q||!q.id||s[q.id])return false;if(q.pick!=null&&q.pick!=='')return false;if(q.val!=null&&q.val!=='')return false;s[q.id]=1;return true})}
 function num(v){var n=parseFloat(String(v).replace(',','.'));return n>0?n:null}
-function apply(qs,ans){var ds=[],jp={};qs.forEach(function(q){var v=ans[q.id];if(v==null||v==='')return;
+function apply(qs,ans,M){var ds=[],jp={};qs.forEach(function(q){var v=ans[q.id];if(v==null||v==='')return;
   var a=q.id==='q_r16_vs_r1_6'?String(v):(v==='__no'?null:(v==='__yes'?'yes':num(v)));
   if(v==='__no'){ds.push({q:q.id,action:'leave_unknown',answer:null});return}
   if(a==null)return;q.pick=a;ds.push({q:q.id,action:'confirm',answer:a});
@@ -24,7 +24,9 @@ function apply(qs,ans){var ds=[],jp={};qs.forEach(function(q){var v=ans[q.id];if
  if(!ds.length)return ds;
  if(typeof window.__approxApply==='function'){try{window.__approxApply(ds)}catch(e){console.warn('p2viewq apply',e)}}
  else{try{var OV=window.OriaViewAssembler,key=window.__p2LastKey;if(OV&&OV.savePick)qs.forEach(function(q){var ax=q.axis||(OV.axisOf&&OV.axisOf(q));if(ax&&!isJog(q)&&typeof q.pick==='number')OV.savePick(key,ax,q.pick)});
-   var JP=window.OriaJogPick;if(JP&&JP.save&&(jp.h||jp.off||jp.r)){var k=JP.key(window.AUTO&&AUTO.last);if(jp.h)JP.save(k,'q_jog_h',jp.h);if(jp.off)JP.save(k,'q_jog_off',jp.off);if(jp.r)JP.save(k,'q_r16_vs_r1_6',jp.r)}}catch(e){console.warn('p2viewq fallback',e)}}
+   }catch(e){console.warn('p2viewq fallback',e)}}
+ /* t995: ZAWSZE (także przy __approxApply) jp -> __a3JogAns + OriaJogPick.save(key(m)); OFF/brak jp = no-op */
+ try{if(jp.h||jp.off||jp.r){var JA0=window.__a3JogAns||{};if(jp.h)JA0.h=jp.h;if(jp.off)JA0.off=jp.off;if(jp.r)JA0.r=jp.r;window.__a3JogAns=JA0;var JP=window.OriaJogPick;if(JP&&JP.save){var k=JP.key(M||(window.AUTO&&AUTO.last));if(jp.h)JP.save(k,'q_jog_h',jp.h);if(jp.off)JP.save(k,'q_jog_off',jp.off);if(jp.r)JP.save(k,'q_r16_vs_r1_6',jp.r)}console.log('p2viewq t995 jogAns',JSON.stringify(JA0))}}catch(e){console.warn('p2viewq t995',e)}
  window.__p2ViewQLast=ds;return ds}
 function css(){if(document.getElementById('p2vq-css'))return;var s=document.createElement('style');s.id='p2vq-css';s.textContent=
 '#p2vq{background:#0b0d14;color:#e6e9f2;font:15px/1.4 Inter,Montserrat,system-ui,sans-serif;padding:12px;max-width:560px;margin:0 auto}'+
@@ -50,7 +52,7 @@ function ask(m){var qs=list(m);if(!on()||!qs.length)return Promise.resolve(m);
    c.querySelectorAll('.p2vq-chip').forEach(function(b){b.onclick=function(){c.querySelectorAll('.p2vq-chip').forEach(function(x){x.classList.remove('on')});b.classList.add('on');ans[q.id]=b.dataset.v;c.classList.add('done')}});
    var inp=c.querySelector('input');if(inp){if(inp.value)ans[q.id]=inp.value;inp.oninput=function(){ans[q.id]=inp.value;c.classList.toggle('done',!!num(inp.value))}}});
   document.getElementById('p2vqno').onclick=function(){res(m)};
-  document.getElementById('p2vqok').onclick=function(){try{apply(qs,ans)}catch(e){}res(m)};
+  document.getElementById('p2vqok').onclick=function(){try{apply(qs,ans,m)}catch(e){}res(m)};
  })}
 window.p2ViewQAsk=ask;window.OriaP2ViewQUI={on:on,list:list,type:type,apply:apply};
 })();
