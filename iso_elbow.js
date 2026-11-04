@@ -79,7 +79,7 @@ function wrapRD(){var E=window.RamaEngine;if(!E||typeof E.readDrawing!=='functio
  w.__isoElbow=1;E.readDrawing=w}
 var TUBE=/\brur|rohr|pipe|kolan|bogen|elbow|sweep|flansch|flange|kołnierz/i;
 function wrapC(){var o=window.candidates;if(typeof o!=='function'||o.__isoElbow)return;var w=function(m){var C=o.apply(this,arguments);
- try{if(off()||!m||!m.V||!m.V.iso||!window.ElbowGeo)return C;var hint=TUBE.test(String(m.allText||''))||(m.isoRef&&m.isoRef.hint);var r=dims(m);
+ try{if(off()||!m||!m.V||!m.V.iso||!window.ElbowGeo)return C;var hint=TUBE.test(String(m.allText||''))||(m.isoRef&&m.isoRef.hint)||m.kind==='pipe';var r=dims(m);
   m.isoElbow={hint:!!hint,dims:r};L('dims',JSON.stringify(r),'hint',!!hint);
   if(!r||(!hint&&!(r.S.R==='rysunek')))return C;
   var MAJ=['D','d','R','F','tf','L','pitch','dh'],g=window.ElbowGeo(THREE,r.P),miss=MAJ.filter(function(k){return r.S[k]!=='rysunek'}),minor=['rc','hcb'].filter(function(k){return r.S[k]==='domyślne'});
