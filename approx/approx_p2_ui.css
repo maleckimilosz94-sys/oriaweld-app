@@ -1,0 +1,49 @@
+/* approx-p2-ui: style z makiety p2_hybrid.css, scope .approx-p2 (nie rusza globalnego CSS). Kolory statusów ZAMROŻONE 2026-11-04. */
+.approx-p2{--bg:#0b0d14;--bg2:#10141D;--cy:#22D3EE;--vi:#9b74f8;--mu:rgba(160,170,190,.45);--tx:#e6eaf2;--ln:#1f2633;background:var(--bg);color:var(--tx);font:14px/1.4 "Inter","Montserrat","Futura",system-ui,sans-serif;max-width:520px;margin:0 auto;padding:12px;text-align:left}
+.approx-p2 *{box-sizing:border-box}
+.approx-p2 header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.approx-p2 .brand{font-weight:800;letter-spacing:.12em;font-size:13px}
+.approx-p2 .brand b{color:var(--cy)}
+.approx-p2 .brand i{color:var(--vi);font-style:normal}
+.approx-p2 select,.approx-p2 button,.approx-p2 input{font:inherit;color:var(--tx);background:var(--bg2);border:1px solid var(--ln);border-radius:8px;padding:6px 8px}
+.approx-p2 button{cursor:pointer}
+.approx-p2 button:active{transform:scale(.97)}
+.approx-p2 .mock{font-size:10px;color:var(--vi);letter-spacing:.1em;margin:6px 0}
+.approx-p2 .card{background:var(--bg2);border:1px solid var(--ln);border-radius:14px;padding:12px;margin:10px 0}
+.approx-p2 h2{font-size:12px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 8px;color:#aab3c5}
+.approx-p2 .note{font-size:11px;color:#8a93a6}
+.approx-p2 .dims{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.approx-p2 .tile{background:var(--bg);border:1px solid var(--ln);border-radius:10px;padding:8px 6px;text-align:center}
+.approx-p2 .tile .k{font-size:22px;font-weight:800;color:var(--cy)}
+.approx-p2 .tile .l{font-size:9px;letter-spacing:.1em;color:#aab3c5}
+.approx-p2 .tile input{width:100%;text-align:center;margin:6px 0;padding:6px 2px}
+.approx-p2 .chip{display:inline-block;font-size:10px;padding:2px 7px;border-radius:99px;border:1px solid;white-space:nowrap}
+.approx-p2 .s-confirmed{color:var(--cy);border-color:var(--cy);background:rgba(34,211,238,.1)}
+.approx-p2 .s-recognized{color:#34d399;border-color:#34d399;background:rgba(52,211,153,.1)}
+.approx-p2 .s-inferred{color:#60a5fa;border-color:#60a5fa;background:rgba(96,165,250,.1)}
+.approx-p2 .s-estimated{color:var(--vi);border-color:var(--vi);background:rgba(155,116,248,.12)}
+.approx-p2 .s-unknown{color:var(--mu);border-color:var(--mu);background:rgba(160,170,190,.06)}
+.approx-p2 .kind{background:rgba(155,116,248,.18);color:#c9b6ff;border-color:transparent;text-transform:uppercase;letter-spacing:.06em}
+.approx-p2 .q{border:1px solid var(--ln);border-radius:12px;padding:10px;margin:8px 0;background:var(--bg)}
+.approx-p2 .q.active{border-color:var(--cy);box-shadow:0 0 0 1px var(--cy),0 0 18px rgba(34,211,238,.18)}
+.approx-p2 .q.done{opacity:.6}
+.approx-p2 .q .t{font-weight:600;margin:6px 0}
+.approx-p2 .q .meta{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11px;color:#8a93a6}
+.approx-p2 .acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.approx-p2 .acts button{flex:1 1 auto;font-size:12px}
+.approx-p2 .b-ok{border-color:var(--cy);color:var(--cy)}
+.approx-p2 .b-no{border-color:#f87171;color:#f87171}
+.approx-p2 .b-lv{color:#aab3c5}
+.approx-p2 .extra{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.approx-p2 .extra input{width:100px}
+.approx-p2 .mlist{list-style:none;padding:0;margin:0}
+.approx-p2 .mlist li{display:flex;justify-content:space-between;gap:6px;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:12px}
+.approx-p2 .mlist li.hl{background:rgba(34,211,238,.12);outline:1px solid var(--cy)}
+.approx-p2 .mono{font-family:ui-monospace,Menlo,monospace;font-size:11px}
+.approx-p2 pre{white-space:pre-wrap;word-break:break-all;font-size:10px;color:#9fe9f7;max-height:240px;overflow:auto}
+.approx-p2 footer{font-size:11px;color:#8a93a6;border-top:1px dashed var(--ln);padding-top:10px;margin-top:14px}
+.approx-p2 .legend{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.approx-p2 .qrow{display:flex;gap:10px;align-items:center;margin:6px 0}
+.approx-p2 .qthumb{flex:0 0 84px;border:1px solid #1e293b;border-radius:10px}
+.approx-p2 .qrow .t{flex:1}
+.approx-p2 .ap-foot{display:flex;gap:8px;margin-top:12px}.approx-p2 .ap-foot button{flex:1;padding:12px}.approx-p2 .ap-foot .ap-go{flex:2;font-weight:700;border-color:var(--cy);color:var(--cy)}

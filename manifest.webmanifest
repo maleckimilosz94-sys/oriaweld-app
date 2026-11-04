@@ -1,10 +1,10 @@
-{
+﻿{
  "name": "ORIAWELD SI",
  "short_name": "ORIAWELD",
  "start_url": "./index.html",
  "display": "standalone",
- "background_color": "#0b0d14",
- "theme_color": "#0b0d14",
+ "background_color": "#0A0B10",
+ "theme_color": "#0A0B10",
  "icons": [
   {
    "src": "icons/icon-192.png",
