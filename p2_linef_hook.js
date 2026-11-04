@@ -8,7 +8,9 @@
  function dims(){try{return new URLSearchParams(location.search).get('linefDims')==='1'||root.__lineFilterDims===1||root.__lineFilterDims===true}catch(e){return false}}
  /* v0.2: cache F2 tylko dla tego samego pliku (root.__f2File); zmiana rysunku (hash) → nowy fetch, stary F2 kasowany */
  function load(){var n=name();if(root.__f2&&root.__f2File===n)return Promise.resolve(root.__f2);root.__f2=null;root.__f2File=null;if(!n||typeof fetch!=='function')return Promise.resolve(null);
-  return fetch('f2/'+n+'.sheet.json').then(function(r){return r.ok?r.json():null}).then(function(j){if(name()!==n)return null;if(j){root.__f2=j;root.__f2File=n}return root.__f2||null}).catch(function(){return null})}
+  /* v0.3 oria-168: whitelist stemów z F2 (zero 404 na losowe uploady) + negatywny cache sesji */
+  var WL={'01_szpula':1,'04_konsole_liebherr':1,'05_uchwyt_certo':1,'06_blech':1};var NEG=root.__f2Neg||(root.__f2Neg={});if(!WL[n]||NEG[n])return Promise.resolve(null);
+  return fetch('f2/'+n+'.sheet.json').then(function(r){if(!r.ok){NEG[n]=1;return null}return r.json()}).then(function(j){if(name()!==n)return null;if(j){root.__f2=j;root.__f2File=n}return root.__f2||null}).catch(function(){return null})}
  /* czysta funkcja (testowalna w Node): F2 json → wynik filtra + segmenty do rysowania */
  function prep(J,opts){var F=root.OriaLineFilter;if(!F||!J||!J.lines)return null;var r=F.filterF2(J,{keepBend:!!(opts&&opts.keepBend),strict:!!(opts&&opts.strict||(typeof window!=='undefined'&&(window.__lineFilterStrict===true||/(^|[#&?])linef=2/.test((window.location&&(window.location.hash+window.location.search))||''))))});var cs=F.toCleanSet(r.keep);var ko=!(opts&&opts.thumbKonturOnly===false);
   /* v0.2: miniatura domyślnie tylko kontur (+gięcie gdy keepBend); wymiary tylko gdy thumbKonturOnly=false (?linefDims=1) */
