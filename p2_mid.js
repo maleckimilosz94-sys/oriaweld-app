@@ -44,6 +44,21 @@ wrapEnd();
 function wrapRebuild(){var o=window.rebuild;if(typeof o!=='function'||o.__mid)return;var w=function(m,kk){var p=window.__p2pre,self=this,args=arguments;
   if(!(p&&!m.__p2preApplied&&p.kind&&p.kind!=='auto'&&KM[p.kind]))return o.apply(self,args);
   var k=KM[p.kind],k0=m.kind,why0=m.kindWhy,r0=o.apply(self,args),auto={kind:m.kind,size:(m.size||[]).slice(),pick:m.pick&&m.pick.name};
+  try{(window.__dbgV=window.__dbgV||[]).push({k:k,auto:auto,vf:p.vlmFirst||null})}catch(e){}
+  /* oria-173: VLM typ „blacha” = blacha gięta LUB płyty. Nie forsuj bent+„wybrane ręcznie” (to blokuje forceG0 → „wyciągnięcie przodu”).
+     Reguła testowalna: przy vlmFirst.typ=blacha bez poprawiono → plate + odblokowana bramka G0 (jak OFF 06: ISO+G0/okna). */
+  function vlmBlachaG0keep(){return k==='bent'&&p.vlmFirst&&p.vlmFirst.typ==='blacha'&&!p.vlmFirst.poprawiono}
+  function isG0pick(c){return !!(c&&(c.g0||c.g0b||c.a3b||/G0|okn|blach/i.test(c.name||'')))}
+  if(vlmBlachaG0keep()&&auto.kind==='plate'&&isG0pick({name:auto.pick})){m.p2=p;m.__p2preApplied=1;m.__vlmKindKeep=1;D('p2mid: VLM blacha zgodna z automatem plate+G0 – zostaje wynik automatu');return r0}
+  if(vlmBlachaG0keep()){
+    /* kind≠plate → twardy __forceG0 (plate+m.p2 = tylko soft, przegrywa z wyciągnięciem); bez „wybrane ręcznie” (to blokuje forceG0) */
+    m.__p2preApplied=1;m.kindFrom=k0;m.kind='bent';m.kindWhy=['VLM blacha → G0 preferowane'];m.kindConf=100;m.autoMixed=false;m.p2=p;m.__p2tube=false;m.__vlmKindKeep=1;
+    var rB=o.apply(self,args);
+    if(isG0pick(m.pick)){
+      m.kind='plate';m.kindWhy=['VLM blacha → plate (G0/okna, zgodne z OFF)'];m.kindConf=100;
+      D('p2mid: VLM blacha → plate+'+((m.pick&&m.pick.name)||'?')+' (hard G0, nie wyciągnięcie)');return rB}
+    D('p2mid: VLM blacha bez G0 – fallback bent P2');m.__vlmKindKeep=0;
+  }
   if(auto.kind===k&&p.kind!=='Rura + wsporniki + płyta'){m.p2=p;m.__p2preApplied=1;D('p2mid: P2 zgodny z automatem ('+k+') – zostaje wynik automatu');return r0}
   m.__p2preApplied=1;m.kindFrom=k0;m.kind=k;m.kindWhy=['P2 (w połowie): '+p.kind,'wybrane ręcznie'];m.kindConf=100;m.autoMixed=false;m.p2=p;m.__p2tube=p.kind==='Rura + wsporniki + płyta';
   var r=o.apply(self,args),mx=function(a){return Math.max.apply(null,(a||[0]).map(Number))};
