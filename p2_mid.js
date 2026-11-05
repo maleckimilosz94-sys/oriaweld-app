@@ -3,7 +3,7 @@
    blacha z grubością >> typowej → pytanie o grubość (mm). Automat testowy: window.__p2Auto={kind,main:[fx,fy],thick}. */
 (function(){
 function D(){if(window.__p2Dbg)console.log.apply(console,arguments)}
-var KM={'Rama (profile zamknięte)':'frame','Rura + wsporniki + płyta':'mixed','Konstrukcja mieszana':'mixed','Konstrukcja blaszana / gięta':'bent','Płaskowniki + płyty':'plate','Kątowniki / ceowniki + płyty':'mixed','Pojedynczy element':'solid','Konstrukcja przestrzenna':'frame'};
+var KM={'Rama (profile zamknięte)':'frame','Rura + wsporniki + płyta':'mixed','Konstrukcja mieszana':'mixed','Mieszany: rura + kątowniki/żebra + płyta':'mixed','Konstrukcja blaszana / gięta':'bent','Płaskowniki + płyty':'plate','Kątowniki / ceowniki + płyty':'mixed','Pojedynczy element':'solid','Konstrukcja przestrzenna':'frame'};
 function L(){try{return (location.hash.match(/lang=(en|pl|de)/)||[])[1]||localStorage.getItem('oria_lang')||'pl'}catch(e){return 'pl'}}
 var TT={pl:['Grubość blachy','Model wychodzi z grubością','mm – to dużo jak na blachę. Podaj grubość [mm]:','Zastosuj','Zostaw'],en:['Sheet thickness','Model thickness is','mm – too much for a sheet. Enter thickness [mm]:','Apply','Keep'],de:['Blechdicke','Modelldicke ist','mm – zu viel für ein Blech. Dicke eingeben [mm]:','Übernehmen','Beibehalten']};
 function tt(i){return (TT[L()]||TT.pl)[i]}
