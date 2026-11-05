@@ -5,7 +5,7 @@
        3) P2 wymuszone: __p2Gate=1 (hardgate: p2=0/ask=0/__p2Auto nie omijają; brak UI → HOLD, brak build3d).
    Brak Ollamy → NIE udaje: m.vlmFirst={blocker}, P2 nadal obowiązkowe bez sugestii. Mock: ?vlmfirst_mock=1 lub window.__vlmFirstFixture. */
 (function(){
-var URL0=window.__vlmUrl||'http://127.0.0.1:11434',MODEL=window.__vlmModel||'qwen3-vl:4b-instruct',TMO=240000;
+var URL0=window.__vlmUrl||'http://127.0.0.1:11434',MODEL=window.__vlmModel||'qwen3-vl:4b-instruct',TMO=+window.__vlmTmo||120000;
 function on(){try{var q=(location.search||'')+'&'+(location.hash||'');return !!window.__vlmFirst||/(^|[?#&])vlmfirst=1(&|$)/.test(q)}catch(e){return false}}
 function mock(){try{return window.__vlmFirstFixture||(/(^|[?#&])vlmfirst_mock=1(&|$)/.test((location.search||'')+'&'+(location.hash||''))?FIX:null)}catch(e){return null}}
 var FIX={typ:'rama',pewnosc:0.8,elementy:[{nazwa:'rama główna',rodzaj:'profil zamknięty',bbox:[200,200,800,700]}],wazne_linie:['obrys ramy na rzucie głównym'],glowny_rzut:[200,200,800,700],uwagi:'FIXTURE (mock) – nie z modelu'};
@@ -43,10 +43,12 @@ function img64(s){var W=s.naturalWidth||s.width,H=s.naturalHeight||s.height,c=do
 function interpret(info){var t0=Date.now(),F=mock();var SW=info&&info.sheet&&(info.sheet.naturalWidth||info.sheet.width),SH=info&&info.sheet&&(info.sheet.naturalHeight||info.sheet.height);
  if(F)return Promise.resolve(Object.assign(validate(norm(JSON.parse(JSON.stringify(F))),SW,SH),{zrodlo:'mock',ms:0}));
  if(!info||!info.sheet||!window.fetch)return Promise.resolve({blocker:'brak arkusza/fetch',zrodlo:'brak'});
- var ac=window.AbortController?new AbortController():null,tm=setTimeout(function(){ac&&ac.abort()},TMO);
- return fetch(URL0+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:ac&&ac.signal,body:JSON.stringify({model:MODEL,stream:false,format:'json',options:{temperature:0,num_ctx:8192},messages:[{role:'user',content:(window.__vlmClassHint&&window.__vlmClassHint.prompt?window.__vlmClassHint.prompt+'\n':'')+PR,images:[img64(info.sheet)]}]})})
-  .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){clearTimeout(tm);var n=validate(norm(JSON.parse(j.message.content)),SW,SH);if(!n||!n.typ)return {blocker:'VLM bez rozpoznanego typu',raw:String(j.message.content).slice(0,400),zrodlo:'vlm'};n.zrodlo='vlm';n.ms=Date.now()-t0;return n})
-  .catch(function(e){clearTimeout(tm);return {blocker:'VLM niedostępny: '+(e&&(e.message||e.name)||e),zrodlo:'brak'}})}
+/*174 twardy deadline: race fetch vs timer — po TMO ZAWSZE blocker nawet gdy abort() nie odrzuca*/
+ var tmr=null,dl=new Promise(function(z){tmr=setTimeout(function(){try{ac&&ac.abort()}catch(e){}z({blocker:'VLM niedostępny: timeout '+Math.round(TMO/1000)+'s',zrodlo:'brak'})},TMO)}),ac=window.AbortController?new AbortController():null;
+ var FP=fetch(URL0+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},signal:ac&&ac.signal,body:JSON.stringify({model:MODEL,stream:false,format:'json',options:{temperature:0,num_ctx:8192},messages:[{role:'user',content:(window.__vlmClassHint&&window.__vlmClassHint.prompt?window.__vlmClassHint.prompt+'\n':'')+PR,images:[img64(info.sheet)]}]})})
+  .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json()}).then(function(j){var n=validate(norm(JSON.parse(j.message.content)),SW,SH);if(!n||!n.typ)return {blocker:'VLM bez rozpoznanego typu',raw:String(j.message.content).slice(0,400),zrodlo:'vlm'};n.zrodlo='vlm';n.ms=Date.now()-t0;return n})
+  .catch(function(e){return {blocker:'VLM niedostępny: '+(e&&(e.message||e.name)||e),zrodlo:'brak'}});
+ return Promise.race([FP,dl]).then(function(v){clearTimeout(tmr);return v})}
 /* rzut główny z VLM → powiąż z wykrytym widokiem (IoU), bez zgadywania bryły. Brak trafienia → zostaje znacznik (p2_mid.injectMain dołoży kontur wokół punktu). */
 function bindView(info,p){var V=info&&info.res&&info.res.views,B=p.mainBox;if(!V||!B)return;var b=[B.x,B.y,B.x+B.w,B.y+B.h],best=null;
  V.forEach(function(v,i){var r=v.bbox;if(!r&&v.outlinePolygon&&v.outlinePolygon.length>2){var xs=v.outlinePolygon.map(function(q){return q[0]}),ys=v.outlinePolygon.map(function(q){return q[1]});r={x:Math.min.apply(0,xs),y:Math.min.apply(0,ys),w:Math.max.apply(0,xs)-Math.min.apply(0,xs),h:Math.max.apply(0,ys)-Math.min.apply(0,ys)}}
