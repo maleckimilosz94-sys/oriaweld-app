@@ -1,7 +1,7 @@
 /* P2 krok 1: widoczna interpretacja VLM (t977u „VLM główny”) — typ + pewność + lista elementów z checkboxami.
    Wybór → m.p2.vlmElementsAccepted (kontrakt vlm_first.js krok 1b). Tylko gdy m.vlmFirst bez blockera (?vlmfirst=1); OFF = '' no-op. */
 (function(root){
- var TLL={pl:{rama:'Rama',rury:'Rury + wsporniki',blacha:'Blacha / płyty',mieszana:'Konstrukcja mieszana'},en:{rama:'Frame',rury:'Pipes + supports',blacha:'Sheet / plates',mieszana:'Mixed structure'},de:{rama:'Rahmen',rury:'Rohre + Halterungen',blacha:'Blech / Platten',mieszana:'Gemischte Konstruktion'}};
+ var TLL={pl:{rama:'Rama',rury:'Rury + wsporniki',blacha:'Blacha / płyty',mieszana:'Rura + żebra + płyta'},en:{rama:'Frame',rury:'Pipes + supports',blacha:'Sheet / plates',mieszana:'Tube + ribs + plate'},de:{rama:'Rahmen',rury:'Rohre + Halterungen',blacha:'Blech / Platten',mieszana:'Rohr + Rippen + Platte'}};
  var D={'VLM czyta rysunek:':{en:'VLM reads the drawing:',de:'VLM liest die Zeichnung:'},'pewność':{en:'confidence',de:'Sicherheit'},'wysoka':{en:'high',de:'hoch'},'średnia':{en:'medium',de:'mittel'},'niska':{en:'low',de:'niedrig'},'Elementy (odznacz błędne — nie pójdą do modelu):':{en:'Elements (untick wrong ones — they will not go into the model):',de:'Elemente (falsche abwählen — gehen nicht ins Modell):'},'bez położenia':{en:'no position',de:'ohne Position'},'potwierdź lub popraw typ poniżej':{en:'confirm or correct the type below',de:'Typ unten bestätigen oder korrigieren'}};
 
  /* oria-170-i18n: etykiety VLM (nazwa/rodzaj/powód) przychodzą po PL z promptu → słownik EN/DE (rodzaj = enum; nazwa = frazy/słowa; nieznane zostają) */
