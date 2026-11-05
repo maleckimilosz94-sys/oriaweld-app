@@ -82,7 +82,9 @@ window.__a3Bent=function(m,C){if(window.__a3Gen===false||/[#&]a3=0/.test(locatio
  C.push(best);
  if(!window.__noA3Prof&&sv.poly&&typeof extrudeView=='function'){var kk=H2/sv.ob.h;m.a3prof={n:sv.poly.length,k:+kk.toFixed(3),poly:sv.poly.map(function(p){return [Math.round((p[0]-sv.ob.x)*kk),Math.round((sv.ob.y+sv.ob.h-p[1])*kk)]})};
   try{var pc={name:'blacha gięta (profil z rzutu cienkiego × szer. G0)',geo:extrudeView(sv,kk,W,'x'),how:'A3.3 · APPROXIMATE: profil z rzutu bocznego ('+sv.poly.length+' wierzch.) wyciągnięty na '+Math.round(W)+' mm; okna nie wycięte'};matchIso(m,[pc]);var r2=viewIoU(m,pc.geo,false);pc.viou=r2.length?r2.reduce(function(s,x){return s+x.iou},0)/r2.length:0;m.a3prof.iou=+(pc.iou||0).toFixed(2);m.a3prof.viou=+pc.viou.toFixed(2);C.push(pc);}catch(e){m.a3prof.err=String(e)}
-  console.log('isolock: a3 prof',JSON.stringify(m.a3prof));}if(best.iou>(g0.iou||0)+0.02&&best.viou>=(g0.viou||0)-0.02){m.__a3BentPick=best;best.__g0=g0;}};
+  console.log('isolock: a3 prof',JSON.stringify(m.a3prof));}/* oria-175 A1+A2: twardy G0 (VLM blacha / forceG0) liczy viou w kontekście kind=bent – próg viou -0.02 kasował wygraną ISO (06 STUB: a3 iou .25 vs G0 .19, viou .249 vs .27). Gdy G0 wymuszony, ISO wyraźnie lepsze (iou ≥ +0.05) → tolerancja viou 0.05. Wyłącznik: __noA3ForceG0 / #a3fg0=0 */
+ var vtol=0.02;if(!window.__noA3ForceG0&&!/[#&]a3fg0=0/.test(location.hash)&&m.__forceG0===g0&&best.iou>=(g0.iou||0)+0.05){vtol=0.05;}
+ if(best.iou>(g0.iou||0)+0.02&&best.viou>=(g0.viou||0)-vtol){m.__a3BentPick=best;best.__g0=g0;if(vtol>0.02){m.a3b.fg0=1;console.log('isolock: a3 bent bije twardy G0 (ISO)');}}};
 
 /* t987: OriaJogPick — pamięć odpowiedzi joggle per plik (klucz f:<fileId>), zapis przez istniejący __approxApply (d.q=q_jog_h/q_jog_off/q_r16_vs_r1_6) albo save(); tylko gdy jogfix ON */
 (function(){var PK='oria_jog_picks',ID={q_jog_h:'h',q_jog_off:'off',q_r16_vs_r1_6:'r'};
