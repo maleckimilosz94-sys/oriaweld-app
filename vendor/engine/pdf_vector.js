@@ -9,7 +9,7 @@ function mul(a,b){return [a[0]*b[0]+a[1]*b[2],a[0]*b[1]+a[1]*b[3],a[2]*b[0]+a[3]
 function ap(m,x,y){return [m[0]*x+m[2]*y+m[4],m[1]*x+m[3]*y+m[5]];}
 
 async function extractStrokes(pdfjs,data){
-  try{const G=pdfjs.GlobalWorkerOptions;if(G&&!G.workerSrc&&typeof window!=='undefined'&&typeof process==='undefined')G.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.worker.min.mjs';}catch(e){}
+  try{const G=pdfjs.GlobalWorkerOptions;if(G&&!G.workerSrc&&typeof window!=='undefined'&&typeof process==='undefined')G.workerSrc=new URL('../pdfjs/pdf.worker.min.mjs',import.meta.url).href;/* oria-184: lokalnie (offline) */}catch(e){}
   const doc=await pdfjs.getDocument({data,isEvalSupported:false}).promise;const page=await doc.getPage(1);
   const vp=page.getViewport({scale:1});const O=pdfjs.OPS;const ops=await page.getOperatorList();
   // vp.transform: PDF -> układ ekranowy (y w dół), w pt
@@ -181,7 +181,7 @@ function sideProfile(v,k){const P=v.outline&&v.outline.poly;if(!P||P.length<4||v
 async function pdfVector(data,opts={}){
   const on=opts.pdfVec===true||(typeof window!=='undefined'&&window.__pdfVec===true);
   if(!on)return null;
-  const pdfjs=opts.pdfjs||await import((typeof window!=='undefined'&&typeof process==='undefined')?'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.min.mjs':'pdfjs-dist/legacy/build/pdf.mjs');
+  const pdfjs=opts.pdfjs||await ((typeof window!=='undefined'&&typeof process==='undefined')?import(new URL('../pdfjs/pdf.min.mjs',import.meta.url).href).catch(()=>import('https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/legacy/build/pdf.min.mjs')):import('pdfjs-dist/legacy/build/pdf.mjs'));
   const P=await extractStrokes(pdfjs,data);const C=classify(P);const views=loops(P.W,P.H,C.geo,opts.centerline!==false);
   // B2c (flaga OFF window.__b2PdfForce): jedyny rzut z ukośnymi krawędziami brany za iso; odzysk tylko gdy para wymiarów pasuje do bbox ORAZ skala jest normowa (±1%).
   if(typeof window!=='undefined'&&window.__b2PdfForce===true&&views.length===1&&views[0].iso){const tm=textMeta(P,views[0]);const q=/\(x([0-9.]+) mm\/pt\)/.exec(tm.scaleSrc||'');const r=q?parseFloat(q[1])/(25.4/72):0;
