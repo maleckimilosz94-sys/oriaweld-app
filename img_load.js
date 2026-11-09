@@ -21,7 +21,10 @@ window.__imgNorm=function(src){var f=(typeof Blob!='undefined'&&src instanceof B
  if(f&&!okType(f))return Promise.reject(new Error('Nieobsługiwany typ pliku ('+(f.type||f.name||'?')+'). Wybierz zdjęcie JPG/PNG'+(window.__pdfVec===true?' albo PDF':'')+'.'));
  var url=f?URL.createObjectURL(f):src;
  var done=function(){if(f)try{URL.revokeObjectURL(url)}catch(e){}};
- return decode(url).then(function(img){var u=render(img);if(!u)return new Promise(function(r){setTimeout(r,250)}).then(function(){return decode(url)}).then(render);return u})
+ var rawURL=function(img,u){/* oria-183 LOAD-1: obraz ≤3000 px i ≤9 Mpx (bezpieczne dla iOS: limit canvas 16,7 Mpx) i jest JPG/PNG → oddaj ORYGINALNE bajty (bez re-kodowania canvasem): silnik jest bardzo wrażliwy na rekompresję JPEG (06: bent 602×580×70 → blacha 40×15) */
+  var W=img.naturalWidth||img.width,H=img.naturalHeight||img.height;if(!f||!u||!/^image\/(jpeg|png)$/i.test(f.type||'')||Math.max(W,H)>3000||W*H>9e6||f.size>25*1048576)return u;
+  return new Promise(function(res){var r=new FileReader();r.onload=function(){res(typeof r.result=='string'&&r.result.length>100?r.result:u)};r.onerror=function(){res(u)};r.readAsDataURL(f)})};
+ return decode(url).then(function(img){var u=render(img);if(!u)return new Promise(function(r){setTimeout(r,250)}).then(function(){return decode(url)}).then(function(i2){return rawURL(i2,render(i2))});return rawURL(img,u)})
  .then(function(u){done();if(!u)throw new Error(MSG);return u},function(e){done();throw new Error(isHeic(f)?HEIC:(e&&e.message&&e.message!='decode'?e.message:MSG))})};
 window.__imgNormRead=function(f,cb){window.__imgNorm(f).then(cb).catch(function(e){alert(e&&e.message||e)})};
 })();

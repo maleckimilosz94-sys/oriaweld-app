@@ -67,8 +67,9 @@ function status(t){var s=document.getElementById('gestS');if(s)s.textContent=t}
 function openCam(){G.gumCalls++;return navigator.mediaDevices.getUserMedia({video:{facingMode:G.facing,width:{ideal:320},height:{ideal:240},frameRate:{ideal:20,max:30}},audio:false}).then(function(s){
   if(!G.on){s.getTracks().forEach(function(t){t.stop()});return}G.stream=s;var v=document.getElementById('gestV');v.srcObject=s;v.style.transform=G.facing=='user'?'scaleX(-1)':'';G.video=v;return v.play().catch(function(){})})}
 function stopCam(){if(G.stream){G.stream.getTracks().forEach(function(t){t.stop()});G.stream=null}var v=document.getElementById('gestV');if(v)v.srcObject=null}
-function start(){if(G.on)return;G.on=true;if(G.v3)G.facing='user';G.mapper=Mapper({mirror:true});G.stats={fps:0,lat:0,n:0,lat_sum:0,lat_max:0};label();status(Tr('gLoad'));
- Promise.all([loadLm(),openCam()]).then(function(){if(!G.on)return;G.mapper.opts.mirror=G.facing=='user';loop()}).catch(function(e){status(Tr('gNoCam')+(e&&e.name||e));G.err=String(e&&e.message||e);stop('error')})}
+function start(){if(G.on)return;G.on=true;var id=++G.lid;G.wd={err:0,hard:0,slow:0};if(G.v3)G.facing='user';G.mapper=Mapper({mirror:true});G.stats={fps:0,lat:0,n:0,lat_sum:0,lat_max:0};label();status(Tr('gLoad'));
+ clearTimeout(G.wdT);G.wdT=setTimeout(function(){if(G.on&&id===G.lid&&!G.stats.n)safeOff('timeout')},WD.startMs);/* oria-183 HANG-1: start nie może wisieć (model/kamera) */
+ Promise.all([loadLm(),openCam()]).then(function(){if(!G.on||id!==G.lid)return;G.mapper.opts.mirror=G.facing=='user';loop(id)}).catch(function(e){if(id!==G.lid)return;status(Tr('gNoCam')+(e&&e.name||e));G.err=String(e&&e.message||e);stop('error')})}
 function setTracked(on){G.tracked=on;var p=document.getElementById('gestPv');if(p)p.classList.toggle('tracked',on);var c=document.getElementById('gestCur');if(c)c.hidden=!on;document.dispatchEvent(new CustomEvent('gesty:track',{detail:{on:on}}))}
 function cursor(x,y,g){var c=document.getElementById('gestCur');if(!c)return;c.style.left=(x*100)+'%';c.style.top=(y*100)+'%';c.dataset.g=g||''}
 function v3frame(lm,o,t){if(!G.v3)return;if(lm){G.hit++;G.lastHand=t;if(!G.tracked&&G.hit>=G.trackN)setTracked(true);
@@ -80,20 +81,32 @@ function gClick(){var P=G.cur||{x:.5,y:.5},v=document.getElementById('view'),cv=
  // klik tylko w canvas 3D (bez przycisków UI/AR)
  ['pointerdown','pointerup','click'].forEach(function(n){try{cv.dispatchEvent(new (n=='click'?MouseEvent:(root.PointerEvent||MouseEvent))(n,{bubbles:true,clientX:cx,clientY:cy}))}catch(e){}});return 'canvas'}
 function gReset(){var c=oc();document.dispatchEvent(new CustomEvent('gesty:reset'));if(c&&typeof c.reset=='function'){c.reset();return 'oc'}return 'event'}
-function stop(why){G.on=false;if(G.v3){G.hit=0;setTracked(false)}G.lastStop=why||'';clearTimeout(G.timer);stopCam();label();var c=document.getElementById('gestC');if(c)c.getContext('2d').clearRect(0,0,c.width,c.height)}
+function stop(why){G.on=false;G.lid++;clearTimeout(G.wdT);try{var v0=document.getElementById('gestV');if(v0&&v0.pause)v0.pause()}catch(e){}if(G.v3){G.hit=0;setTracked(false)}G.lastStop=why||'';clearTimeout(G.timer);stopCam();label();var c=document.getElementById('gestC');if(c)c.getContext('2d').clearRect(0,0,c.width,c.height)}
 G.start=start;G.stop=stop;
 var FPS=17,PER=1000/FPS,last=0,frames=[];
-function loop(){if(!G.on)return;var v=G.video,now=performance.now();
- if(v&&v.readyState>=2&&v.currentTime!==G._lt){G._lt=v.currentTime;var t0=performance.now(),src=v;if(G.delegate=='CPU'){G._cv=G._cv||document.createElement('canvas');G._cv.width=v.videoWidth||320;G._cv.height=v.videoHeight||240;G._cv.getContext('2d').drawImage(v,0,0);src=G._cv}var r=G.lm.detectForVideo(src,t0),lat=performance.now()-t0;
+/* oria-183 HANG-1: jedna pętla (token G.lid), oddaj wątek ≥ czas inferencji (≤50% CPU głównego wątku), watchdog: klatka >1.5 s po rozgrzewce lub 3 błędy → bezpieczne wyłączenie + toast */
+var WD={hardMs:1500,warm:5,maxErr:3,startMs:20000};G.WD=WD;
+var TT={pl:{slow:'Sterowanie dłonią wyłączone – urządzenie nie nadąża (bezpiecznie). Spróbuj ponownie.',err:'Sterowanie dłonią wyłączone – błąd modelu/kamery. Spróbuj ponownie.',timeout:'Sterowanie dłonią wyłączone – kamera lub model nie odpowiada.'},en:{slow:'Hand control turned off – device can’t keep up. Try again.',err:'Hand control turned off – model/camera error. Try again.',timeout:'Hand control turned off – camera or model not responding.'},de:{slow:'Handsteuerung deaktiviert – Gerät zu langsam. Erneut versuchen.',err:'Handsteuerung deaktiviert – Modell-/Kamerafehler. Erneut versuchen.',timeout:'Handsteuerung deaktiviert – Kamera oder Modell reagiert nicht.'}};
+function lg(){var l='pl';try{l=localStorage.getItem('oria_lang')||'pl'}catch(e){}var m=(location.hash||'').match(/lang=(en|pl|de)/);l=m?m[1]:l;return TT[l]?l:'pl'}
+function toast(k){try{var t=document.getElementById('gestToast');if(t)t.remove();t=document.createElement('div');t.id='gestToast';t.setAttribute('role','status');t.setAttribute('aria-live','polite');t.textContent=TT[lg()][k]||TT.pl[k];t.style.cssText='position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:99999;max-width:min(92vw,420px);padding:10px 14px;border-radius:10px;background:rgba(16,20,29,.94);border:1px solid rgba(245,180,60,.55);border-left:4px solid #F5B43C;color:#E6EAF2;font:500 14px/1.4 system-ui;box-shadow:0 6px 24px rgba(0,0,0,.4)';document.body.appendChild(t);setTimeout(function(){t.remove()},6000)}catch(e){}}
+function safeOff(k){G.wdTrip=(G.wdTrip||0)+1;G.wdWhy=k;stop('watchdog:'+k);toast(k);try{document.dispatchEvent(new CustomEvent('gesty:watchdog',{detail:{why:k}}))}catch(e){}}
+G.lid=0;
+/* oria-183 HANG-1: wnioskowanie MediaPipe jest SYNCHRONICZNE na wątku głównym (300–3000 ms/klatkę na słabym GPU/CPU) – w trakcie dotyku/obrotu/pinch nie wnioskujemy, żeby nie blokować gestów dotykowych i OrbitControls */
+var PT=0;['pointerdown','pointermove','touchstart','touchmove','wheel'].forEach(function(n){document.addEventListener(n,function(){PT=performance.now()},{capture:true,passive:true})});G.touchQuiet=250;
+function loop(id){if(!G.on||id!==G.lid)return;var v=G.video,now=performance.now(),lat=0;
+ if(now-PT<G.touchQuiet){G.skipTouch=(G.skipTouch||0)+1;G.timer=setTimeout(function(){loop(id)},120);return}
+ if(v&&v.readyState>=2&&v.currentTime!==G._lt){G._lt=v.currentTime;var t0=performance.now(),src=v,r=null;try{if(G.delegate=='CPU'){G._cv=G._cv||document.createElement('canvas');G._cv.width=v.videoWidth||320;G._cv.height=v.videoHeight||240;G._cv.getContext('2d').drawImage(v,0,0);src=G._cv}r=G.lm.detectForVideo(src,t0)}catch(e){G.wd.err++;G.err=String(e&&e.message||e);if(G.wd.err>=WD.maxErr){safeOff('err');return}G.timer=setTimeout(function(){loop(id)},200);return}lat=performance.now()-t0;
+  if(G.stats.n>=WD.warm){if(lat>WD.hardMs){if(++G.wd.slow>=2){safeOff('slow');return}}else G.wd.slow=0}
   var lm=r&&r.landmarks&&r.landmarks[0]||null,o=G.mapper.step(lm,t0);if(o.yaw||o.pitch||o.zoom!=1)apply(o);
   if(o.explode)G.lastExplode=explodeToggle();v3frame(lm,o,t0);
   frames.push(t0);frames=frames.filter(function(f){return t0-f<1000});var S=G.stats;S.n++;S.lat=lat;S.lat_sum+=lat;S.lat_max=Math.max(S.lat_max,lat);S.fps=frames.length;S.gesture=o.gesture;(G.log=G.log||[]).push({t:Math.round(t0),g:o.gesture,lat:+lat.toFixed(1),p:o.paused,e:o.explode});if(G.log.length>2000)G.log.shift();
   draw(document.getElementById('gestC'),lm,o.gesture);
   status((G.dbg?'['+G.delegate+(G.lastStop?' stop:'+G.lastStop:'')+(G.tracked?' T':'')+'] ':'')+(o.paused?Tr('gLost'):(S.fps+' fps · '+lat.toFixed(0)+' ms · '+(o.gesture=='open'?Tr('gOpen'):o.gesture=='pinch'?Tr('gPinch'):o.gesture=='fist'?Tr('gFist'):o.gesture))));}
- var wait=Math.max(5,PER-(performance.now()-now));G.timer=setTimeout(loop,wait)}
+ if(!G.on||id!==G.lid)return;var wait=Math.max(5,PER-(performance.now()-now),Math.min(2000,lat*2));G.timer=setTimeout(function(){loop(id)},wait)}
 // AR: stop PRZED akcją, w fazie capture; nigdy getUserMedia
 document.addEventListener('click',function(e){var a=e.target.closest&&e.target.closest('a[rel=ar],#aar,#har,#arb,#fsar,#arQL,[slot=ar-button]');if(a&&G.on)stop('ar')},true);
 document.addEventListener('visibilitychange',function(){if(document.hidden&&G.on)stop('hidden')});
+window.addEventListener('pagehide',function(){if(G.on)stop('pagehide')});/* oria-183 HANG-1: iOS PWA – kamera nie zostaje włączona po zamknięciu/przejściu */
 // zamknięcie 3D: canvas renderera zniknął
 var GONE_MS=900,goneT=0;
 function watch(){var v=document.getElementById('view'),cv=v&&v.querySelector('canvas:not(#gestC)');
