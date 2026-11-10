@@ -4,10 +4,18 @@
 (function(){
 var base=(document.currentScript&&document.currentScript.src||'').replace(/engine\.js.*$/,'');
 var cvP=null,ocrP=null,ppP=null;
-function loadPP(){if(ppP)return ppP;ppP=new Promise(function(res,rej){function go(){try{ort.env.wasm.wasmPaths=base+'ort/';ort.env.wasm.numThreads=1;ort.env.wasm.proxy=false;}catch(e){}
-  Promise.all([ort.InferenceSession.create(base+'ppocr/ch_PP-OCRv3_det_infer.onnx',{executionProviders:['wasm']}),ort.InferenceSession.create(base+'ppocr/ch_PP-OCRv3_rec_infer.onnx',{executionProviders:['wasm']}),fetch(base+'ppocr/keys.txt').then(function(r){return r.text()})])
-  .then(function(a){res({det:a[0],rec:a[1],keys:a[2].split('\n').filter(function(x,i,arr){return !(i==arr.length-1&&x=='')})});}).catch(rej);}
- if(window.ort)return go();var s=document.createElement('script');s.src=base+'ort/ort.min.js';s.onload=go;s.onerror=function(){rej('brak ort')};document.head.appendChild(s);});return ppP;}
+/* oria-187 COI domyślnie ON: wątki ORT = min(4, hardwareConcurrency) tylko gdy crossOriginIsolated + SharedArrayBuffer; inaczej 1. ?ortthr=N (test) nadpisuje liczbę, ale nadal tylko przy izolacji. */
+function __ortThr(){try{if(!window.crossOriginIsolated||typeof SharedArrayBuffer==='undefined')return 1;var hc=navigator.hardwareConcurrency||1,m=/[?&#]ortthr=(\d+)/.exec(location.href);if(m)return Math.max(1,Math.min(+m[1],hc,8));return Math.max(1,Math.min(4,hc))}catch(e){}return 1}
+/* threaded wasm (10,6 MB) nie jest w precache: sprawdź dostępność (SW cache / sieć) zanim wybierzemy wątki; offline/brak → cicho 1 wątek */
+function __thrOk(n){if(n<2)return Promise.resolve(1);try{return fetch(base+'ort/ort-wasm-simd-threaded.wasm').then(function(r){if(!r||!r.ok)throw 0;return r.arrayBuffer()}).then(function(b){return b&&b.byteLength>1e6?n:1}).catch(function(){return 1})}catch(e){return Promise.resolve(1)}}
+function __ortScript(fresh){return new Promise(function(res,rej){var s=document.createElement('script');s.src=base+'ort/ort.min.js'+(fresh?'?fb='+Date.now():'');s.onload=res;s.onerror=function(){rej('brak ort')};document.head.appendChild(s)})}
+function __ortHashWrap(a){if(!window.__ortHashOn)return;[a[0],a[1]].forEach(function(s){var o=s.run;s.run=function(){return o.apply(s,arguments).then(function(r){var d=r[s.outputNames[0]].data,v=new Int32Array(d.buffer,d.byteOffset,d.length),h=0;for(var i=0;i<v.length;i++)h=(Math.imul(h,31)+v[i])|0;(window.__ortH=window.__ortH||[]).push(h);return r})}})}
+function loadPP(){if(ppP)return ppP;ppP=new Promise(function(res,rej){
+ function mk(n){try{ort.env.wasm.wasmPaths=base+'ort/';ort.env.wasm.numThreads=n;ort.env.wasm.proxy=false;}catch(e){}window.__ortThrUsed=n;
+  return Promise.all([ort.InferenceSession.create(base+'ppocr/ch_PP-OCRv3_det_infer.onnx',{executionProviders:['wasm']}),ort.InferenceSession.create(base+'ppocr/ch_PP-OCRv3_rec_infer.onnx',{executionProviders:['wasm']}),fetch(base+'ppocr/keys.txt').then(function(r){return r.text()})])}
+ function fin(a){__ortHashWrap(a);res({det:a[0],rec:a[1],keys:a[2].split('\n').filter(function(x,i,arr){return !(i==arr.length-1&&x=='')})});}
+ function go(){__thrOk(__ortThr()).then(function(n){return mk(n).catch(function(err){if(n<2)throw err;/* wątkowy ORT nie wstał → cichy fallback: świeża instancja ort.min.js, 1 wątek */window.__ortFallback=String(err&&err.message||err).slice(0,120);return __ortScript(true).then(function(){return mk(1)})})}).then(fin).catch(rej)}
+ if(window.ort)return go();__ortScript(false).then(go,function(){rej('brak ort')});});return ppP;}
 function toTensor(c,mean,std){var W=c.width,H=c.height,d=c.getContext('2d').getImageData(0,0,W,H).data,f=new Float32Array(3*W*H);for(var i=0;i<W*H;i++){for(var ch=0;ch<3;ch++)f[ch*W*H+i]=(d[i*4+ch]/255-mean[ch])/std[ch];}return new ort.Tensor('float32',f,[1,3,H,W]);}
 function ppDet(pp,cv,canvas){var W=canvas.width,H=canvas.height,k=Math.min(1,1280/Math.max(W,H)),w=Math.max(32,Math.round(W*k/32)*32),h=Math.max(32,Math.round(H*k/32)*32),c=document.createElement('canvas');c.width=w;c.height=h;var x=c.getContext('2d');x.drawImage(canvas,0,0,w,h);
  var feeds={};feeds[pp.det.inputNames[0]]=toTensor(c,[0.485,0.456,0.406],[0.229,0.224,0.225]);return pp.det.run(feeds).then(function(o){var t=o[pp.det.outputNames[0]],p=t.data,m=new cv.Mat(h,w,cv.CV_8U),md=m.data;for(var i=0;i<w*h;i++)md[i]=p[i]>0.3?255:0;
@@ -185,5 +193,7 @@ function ppocr(c){return Promise.all([loadCV(),loadPP()]).then(function(r){var c
  .then(function(bx){var out=[],ch=Promise.resolve();bx.forEach(function(b){ch=ch.then(function(){var cr=cropC(b),vert=b.height>b.width*1.2,cands=vert?[rotC(cr,false),rotC(cr,true)]:[cr],best=null,q=Promise.resolve();
    cands.forEach(function(cc,ci){q=q.then(function(){return ppRec(pp,cc).then(function(o){var pv=parse(o.t);var sc=o.c+(pv?20:0);if(!best||sc>best.sc)best={t:o.t,c:o.c,sc:sc,p:pv,dir:vert?(ci?'cw':'ccw'):'h'};});});});
    return q.then(function(){if(best)out.push({box:{x:b.x,y:b.y,w:b.width,h:b.height},text:best.t,conf:best.c,parsed:best.p,vert:vert});});});});return ch.then(function(){return out;});});});}
-window.RamaEngine={readDrawing:readDrawing,loadCV:loadCV,ppocr:ppocr,parse:parse};
+/* oria-185 PERF-1: rozgrzewka silnika (OpenCV + PP-OCR ORT + Tesseract worker) równolegle z edytorem/wyborem pliku — te same moduły, ten sam wynik */
+function warm(){var q=function(p){return p.catch(function(){})};return Promise.all([q(loadCV()),q(loadPP())]);}/* 1.3b: bez ocrW() (Tesseract worker i tak startuje w readDrawing; mniej równoległej roboty z właściwym przebiegiem) */
+window.RamaEngine={readDrawing:readDrawing,loadCV:loadCV,ppocr:ppocr,parse:parse,warm:warm};
 })();

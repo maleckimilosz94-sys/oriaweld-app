@@ -58,3 +58,5 @@ deploy_response*
 *.zip
 !/img_load.js
 !/p2_vlm_hint.js
+!/rq.js
+!/rq_worker.js
