@@ -42,3 +42,53 @@ window.__imgNorm=function(src){var f=(typeof Blob!='undefined'&&src instanceof B
  .then(function(u){done();if(!u)throw new Error(MSG);return u},function(e){done();throw new Error(isHeic(f)?HEIC:(e&&e.message&&e.message!='decode'?e.message:MSG))})};
 window.__imgNormRead=function(f,cb){window.__imgNorm(f).then(cb).catch(function(e){window.__loadFail(e)})};
 })();
+
+/* oria-191 CTR: normalizacja kontrastu rysunku PRZED analizą (słabe/blade kontury profili → zwykle nie przechodzą progów <120/<140/<160/<170 i są
+   traktowane jak tło/linie pomocnicze). __ctrBoost(canvas,info): poziomy (levels) po percentylach – atrament(p0.4)→0, papier(p60)→255, tylko gdy
+   rysunek jest „blady” (atrament ≥100 lub rozstęp papier–atrament ≤95, przy jasnym papierze ≥120). Dobry kontrast = zero zmian (no-op, bez zapisu pikseli).
+   Wyłączniki: ?ctr=0 / #ctr=0 / window.__noCtr; wymuszenie: ?ctr=1 / #ctr=1. Wynik w info.ctr oraz window.__ctr (diagnostyka). Działa in-place na canvasie. */
+(function(){
+function mode(){try{var m=(location.search+'&'+location.hash).match(/[?&#]ctr=([0123])/);return m?+m[1]:null}catch(e){return null}}
+function pct(h,n,q){var t=q*n,a=0;for(var i=0;i<256;i++){a+=h[i];if(a>=t)return i}return 255}
+function ctrLevels(c,info){
+ var R={applied:false};
+ try{
+  if(window.__noCtr||mode()===0){R.off=1;window.__ctr=R;if(info)info.ctr=R;return R}
+  var w=c.width,h=c.height,x=c.getContext('2d'),im=x.getImageData(0,0,w,h),d=im.data,H=new Uint32Array(256),n=0;
+  for(var i=0;i<d.length;i+=8){var L=(d[i]*77+d[i+1]*151+d[i+2]*28)>>8;H[L]++;n++}
+  var ink=pct(H,n,0.004),bg=pct(H,n,0.6),dd=bg-ink;R.ink=ink;R.bg=bg;R.d=dd;
+  var weak=bg>=120&&(ink>=100||dd<=95),force=mode()===1;
+  if(!(weak||force)||dd<12){R.reason=(weak||force)?'rozstęp<12':'kontrast OK';window.__ctr=R;if(info)info.ctr=R;return R}
+  /* zdjęcie: nierówne tło (cień/gradient) → spłaszczenie: tło lokalne = p80 w blokach 48 px (bilinearnie), v→v·255/tło; tylko gdy rozrzut tła bloków (p90−p10) ≥25 */
+  var BW=48,gx=Math.ceil(w/BW),gy=Math.ceil(h/BW),bgm=new Float32Array(gx*gy),minB=0.7*bg,bx,by,xx,yy,hh,nn,L2;
+  for(by=0;by<gy;by++)for(bx=0;bx<gx;bx++){hh=new Uint32Array(256);nn=0;for(yy=by*BW;yy<Math.min(h,by*BW+BW);yy+=2)for(xx=bx*BW;xx<Math.min(w,bx*BW+BW);xx+=2){var q=(yy*w+xx)*4;hh[(d[q]*77+d[q+1]*151+d[q+2]*28)>>8]++;nn++}bgm[by*gx+bx]=Math.max(minB,nn?pct(hh,nn,0.8):bg)}
+  var sb=Array.prototype.slice.call(bgm).sort(function(a,b){return a-b}),spread=sb[Math.floor(sb.length*0.9)]-sb[Math.floor(sb.length*0.1)];R.spread=Math.round(spread);
+  if(spread>=25&&!window.__noCtrFlat&&mode()!==3){
+   var cx0=new Int32Array(w),cx1=new Int32Array(w),cwx=new Float32Array(w);for(xx=0;xx<w;xx++){var fx=Math.min(gx-1,Math.max(0,(xx+0.5)/BW-0.5)),i0=Math.floor(fx);cx0[xx]=i0;cx1[xx]=Math.min(gx-1,i0+1);cwx[xx]=fx-i0}
+   for(yy=0;yy<h;yy++){var fy=Math.min(gy-1,Math.max(0,(yy+0.5)/BW-0.5)),j0=Math.floor(fy),j1=Math.min(gy-1,j0+1),wy=fy-j0;
+    for(xx=0;xx<w;xx++){var a=bgm[j0*gx+cx0[xx]]*(1-cwx[xx])+bgm[j0*gx+cx1[xx]]*cwx[xx],b2=bgm[j1*gx+cx0[xx]]*(1-cwx[xx])+bgm[j1*gx+cx1[xx]]*cwx[xx],g=255/(a*(1-wy)+b2*wy),k=(yy*w+xx)*4;
+     d[k]=Math.min(255,d[k]*g+0.5)|0;d[k+1]=Math.min(255,d[k+1]*g+0.5)|0;d[k+2]=Math.min(255,d[k+2]*g+0.5)|0}}
+   H=new Uint32Array(256);n=0;for(var i3=0;i3<d.length;i3+=8){var L3=(d[i3]*77+d[i3+1]*151+d[i3+2]*28)>>8;H[L3]++;n++}
+   ink=pct(H,n,0.004);bg=pct(H,n,0.6);R.flat=true;R.ink2=ink;R.bg2=bg;}
+  var lo=ink,hi=Math.max(lo+12,bg),lut=new Uint8Array(256);
+  for(var v=0;v<256;v++){var t=(v-lo)/(hi-lo);lut[v]=t<=0?0:t>=1?255:Math.round(255*t)}
+  for(var j=0;j<d.length;j+=4){d[j]=lut[d[j]];d[j+1]=lut[d[j+1]];d[j+2]=lut[d[j+2]]}
+  x.putImageData(im,0,0);R.applied=true;R.lo=lo;R.hi=hi;R.forced=force&&!weak;
+  try{if(info&&info.log)info.log.push('kontrast: poziomy '+lo+'→0, '+hi+'→255 (blady rysunek: atrament '+ink+', papier '+bg+')')}catch(e){}
+ }catch(e){R.err=String(e&&e.message||e)}
+ window.__ctr=R;if(info)info.ctr=R;return R}
+window.__ctrBoost=function(c,info){var r=ctrLevels(c,info);if(mode()===2&&!window.__noCtr&&window.__ctrFaint)r.faint=window.__ctrFaint(c,info);return r};
+/* oria-191 CTR2 (opt-in ?ctr=2): „ratunek” bladych kresek przy MIESZANYM kontraście (czarny tekst/ramka + blade kontury profili – globalne poziomy nic nie dadzą).
+   Kreska uznana za bladą, gdy w oknie 5×5 nie ma żadnego piksela ciemniejszego niż 140 i black-hat 7×7 ≥22; wtedy piksel ciemnieje o 2.5×black-hat.
+   Nie rusza obwódek antyaliasingu ciemnych linii (tam min 5×5 <140). Auto-trigger niemożliwy bez ryzyka regresji (patrz RAPORT_191) – dlatego opt-in. */
+function minmax(g,w,h,r,isMax){var t=new Uint8Array(g.length),o=new Uint8Array(g.length),i,x,y,k,v,u;
+ for(y=0;y<h;y++){for(x=0;x<w;x++){v=g[y*w+x];for(k=-r;k<=r;k++){var xx=x+k;if(xx<0||xx>=w)continue;u=g[y*w+xx];if(isMax?u>v:u<v)v=u}t[y*w+x]=v}}
+ for(y=0;y<h;y++){for(x=0;x<w;x++){v=t[y*w+x];for(k=-r;k<=r;k++){var yy=y+k;if(yy<0||yy>=h)continue;u=t[yy*w+x];if(isMax?u>v:u<v)v=u}o[y*w+x]=v}}
+ return o}
+window.__ctrFaint=function(c,info){var R={applied:false};try{var w=c.width,h=c.height,x=c.getContext('2d'),im=x.getImageData(0,0,w,h),d=im.data,g=new Uint8Array(w*h),i;
+ for(i=0;i<g.length;i++)g[i]=(d[i*4]*77+d[i*4+1]*151+d[i*4+2]*28)>>8;
+ var cl=minmax(minmax(g,w,h,3,true),w,h,3,false),m5=minmax(g,w,h,2,false),n=0;
+ for(i=0;i<g.length;i++){var bh=cl[i]-g[i];if(bh>=22&&m5[i]>=140){var dl=Math.round(2.5*bh),j=i*4;d[j]=Math.max(0,d[j]-dl);d[j+1]=Math.max(0,d[j+1]-dl);d[j+2]=Math.max(0,d[j+2]-dl);n++}}
+ if(n){x.putImageData(im,0,0);R.applied=true;R.px=n}}catch(e){R.err=String(e&&e.message||e)}
+ window.__ctrF=R;if(info)info.ctrF=R;return R};
+})();

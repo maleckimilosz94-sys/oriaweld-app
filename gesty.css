@@ -44,7 +44,7 @@
 
 /* BETA (v95) */
 #gestBtn{position:relative}
-#gestBtn .gestBeta{position:absolute;top:2px;right:2px;font:700 8px/1 system-ui,sans-serif;letter-spacing:.04em;padding:2px 3px;border-radius:6px;background:#ffb020;color:#1a1200;pointer-events:none;box-shadow:0 0 0 1.5px #0b0d14}
+#gestBtn .gestBeta{position:absolute;top:2px;right:2px;font:700 7px/1 system-ui,sans-serif;letter-spacing:.04em;padding:1px 2px;border-radius:6px;background:#0b0d14;color:#22d3ee;border:2px solid #22d3ee;font-family:'JetBrains Mono',ui-monospace,monospace;font-weight:600;pointer-events:none;box-shadow:0 0 0 1.5px #0b0d14}
 #gestNote{font:500 11px/1.3 system-ui,sans-serif;color:#ffd38a;background:rgba(11,13,20,.82);border:1px solid rgba(255,176,32,.45);border-radius:8px;padding:4px 8px;max-width:220px}
 #gestNote[hidden]{display:none}
 #gestDock #gestNote{position:absolute;left:0;bottom:calc(100% + 6px);width:max-content;max-width:min(240px,70vw);pointer-events:none;display:block}
@@ -61,3 +61,40 @@
 #gestUI .gbtn.na{opacity:.45}
 #gestUI .gbtn.na::after{background:#8a94a6}
 #gestPv .gcancel{position:absolute;left:4px;bottom:4px;z-index:3;height:26px;min-height:26px;padding:0 10px;border-radius:8px;border:1px solid var(--g-line);background:rgba(11,13,20,.82);color:var(--g-tx);font:600 12px/1 system-ui,-apple-system,sans-serif;cursor:pointer}
+
+/* ===== oria-192 GEST-UI wariant A (Wizja final_A): tło #0b0d14, rękawica = jedyny fiolet, chip SI cyan-outline, miarka Center ===== */
+/* oria-194 A2 (Wizja): ikona przycisku = kreskowa dłoń stal/cyan (bez 2. fioletu; rękawica-fiolet tylko kursor) */
+/* kursor-rękawica na całym widoku (hotspot ustawia JS przez margin) */
+#gestUI>#gestCur{position:absolute;width:48px;height:48px;margin:0;border-radius:0;background:none;box-shadow:none;pointer-events:none;z-index:4;transition:left .06s linear,top .06s linear;transform:none}
+#gestUI>#gestCur[hidden]{display:none}
+#gestCur img{position:absolute;left:0;top:0;width:48px;height:48px;pointer-events:none;-webkit-user-drag:none;user-select:none}
+#gestCur #gestLoupe{left:34px;top:-6px;width:36px;height:36px}
+#gestCur #gestLoupe[hidden]{display:none}
+#gestCur[data-g=pinch],#gestCur[data-g=fist]{transform:none}
+/* kropka w małej ramce zamiast fioletowej kulki (fiolet tylko na rękawicy) */
+#gestDot{position:absolute;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:var(--g-cy);box-shadow:0 0 8px rgba(34,211,238,.7);pointer-events:none}
+#gestDot[hidden]{display:none}
+#gestChip[data-g=pinch] i{background:var(--g-cy)}
+/* chip SI w nagłówku: cyan-outline, gdy sterowanie dłonią jest aktywne */
+html body.gest-on .hlogo sub,html body.gest-on .logo sub{color:#22d3ee!important;border-color:#22d3ee!important;background:transparent!important}
+/* podpowiedź przed pierwszym zoomem */
+#gestHint{position:absolute;left:50%;bottom:62px;transform:translateX(-50%);max-width:min(312px,calc(100% - 16px));padding:6px 12px;border-radius:10px;background:rgba(11,13,20,.82);color:#e3e8ef;font:600 13px/1.3 Inter,system-ui,-apple-system,sans-serif;text-align:center;pointer-events:none;z-index:5}
+#gestHint[hidden]{display:none}
+/* miarka zoomu: − Oddal | Center | + Przybliż */
+#gestRuler{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);width:min(312px,calc(100% - 16px));box-sizing:border-box;padding:10px 12px 8px;border-radius:14px;background:#10141d;border:1px solid rgba(34,211,238,.45);box-shadow:0 8px 24px rgba(0,0,0,.5);pointer-events:none;z-index:6;font-family:Inter,system-ui,-apple-system,sans-serif}
+#gestRuler[hidden]{display:none}
+#gestRuler .grl{position:relative;height:34px;margin:0 4px}
+#gestRuler .grl::before{content:"";position:absolute;left:0;right:0;top:15px;height:4px;border-radius:2px;background:#1e293b}
+#gestRuler .gt{position:absolute;top:8px;width:2px;height:18px;margin-left:-1px;border-radius:1px;background:#64748b}
+#gestRuler .gt.gtc{top:6px;height:22px}
+#gestRuler .gk{position:absolute;top:0;width:34px;height:34px;margin-left:-17px;border-radius:10px;background:rgba(34,211,238,.14);left:50%;transition:left .14s cubic-bezier(.2,.8,.2,1)}
+#gestRuler .gk::before{content:"";position:absolute;left:7px;top:7px;width:14px;height:14px;border-radius:50%;border:3px solid #22d3ee;box-sizing:content-box}
+#gestRuler .gk::after{content:"";position:absolute;left:13px;top:13px;width:8px;height:8px;border-radius:50%;background:#22d3ee}
+#gestRuler[data-z=out] .gk{left:17.9%}#gestRuler[data-z=center] .gk{left:50%}#gestRuler[data-z=in] .gk{left:82.1%}
+#gestRuler .grs{display:flex;justify-content:space-between;align-items:flex-start;font:600 13px/1.2 Inter,system-ui,sans-serif;color:#9aa4b4}
+#gestRuler .grs span{flex:1 1 0;text-align:center;white-space:nowrap}
+#gestRuler[data-z=out] .grs span[data-z=out],#gestRuler[data-z=center] .grs span[data-z=center],#gestRuler[data-z=in] .grs span[data-z=in]{color:#22d3ee}
+#gestRuler .grn{margin-top:4px;text-align:center;font:400 11px/1.2 Inter,system-ui,sans-serif;color:#6a7384}
+@media (prefers-reduced-motion:reduce){#gestRuler .gk,#gestUI>#gestCur{transition:none}}
+/* beta-notka nie zasłania podpowiedzi/miarki */
+#gestUI:has(#gestHint:not([hidden])) #gestNote,#gestUI:has(#gestRuler:not([hidden])) #gestNote,#gestUI:has(#gestCur:not([hidden])) #gestNote{display:none!important}
