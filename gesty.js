@@ -51,25 +51,48 @@ function draw(cv,lm,g){var x=cv.getContext('2d'),W=cv.width,H=cv.height;x.clearR
  CONN.forEach(function(c){var a=P(lm[c[0]]),b=P(lm[c[1]]);x.beginPath();x.moveTo(a[0],a[1]);x.lineTo(b[0],b[1]);x.stroke()});
  x.fillStyle='#e3e8ef';lm.forEach(function(p){var q=P(p);x.fillRect(q[0]-1.5,q[1]-1.5,3,3)})}
 var MP=null;
-function loadLm(){if(G.lm)return Promise.resolve(G.lm);var base=new URL('vendor/mediapipe/',document.baseURI).href;
- return import(base+'vision_bundle.mjs').then(function(v){MP=v;return v.FilesetResolver.forVisionTasks(base+'wasm')}).then(function(fs){
-  var mk=function(dl){return MP.HandLandmarker.createFromOptions(fs,{baseOptions:{modelAssetPath:base+'hand_landmarker.task',delegate:dl},runningMode:'VIDEO',numHands:1,minHandDetectionConfidence:0.5,minTrackingConfidence:0.5})};
-  var pref=(function(){try{return localStorage.getItem('gesty_dl')}catch(e){return null}})();G.delegate=pref||'GPU';return mk(G.delegate).catch(function(){G.delegate='CPU';return mk('CPU')})}).then(function(l){G.lm=l;return l})}
+/* oria-189 GEST-IOS: iPhone/iPad (Safari/PWA). Pułapki iOS: delegate GPU (WebGL2) potrafi zawiesić wątek/proces i nie da się go złapać try/catch; pierwsza klatka GPU = kompilacja shaderów (0,8–3,5 s bloku); wasm 13,5 MB + model 7,8 MB bez postępu; inferencja jest synchroniczna na wątku głównym; limit pamięci karty. */
+var IOS=(function(){try{var u=navigator.userAgent||'';return /iPhone|iPad|iPod/.test(u)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1)}catch(e){return false}})();G.ios=IOS;
+var IOS_DEFAULT_OFF=true;/* wariant B: na iOS domyślnie wyłączone (opt-in ?gest=1); false = wariant A (włączone z zabezpieczeniami: CPU, 15 fps, watchdog 500 ms) */
+function lsg(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lss(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}}
+(function(){var m=/[?&#]gest=(0|1|auto)(?![0-9a-z])/.exec(QS);if(!m)return;if(m[1]=='1'){lss('gesty_ios','1');lss('gesty_dis',null)}else{lss('gesty_ios',null);lss('gesty_dis',null)}})();
+/* blokada: 'default' (iOS, wariant B bez opt-in) | 'fail' (watchdog/timeout na tym urządzeniu w ostatnich 14 dniach) | '' */
+function blocked(){if(!IOS)return '';var d=+lsg('gesty_dis')||0;if(d&&Date.now()-d<14*864e5)return 'fail';if(IOS_DEFAULT_OFF&&lsg('gesty_ios')!=='1')return 'default';return ''}
+G.blocked=blocked;
+var SZ={mjs:156139,wasm:13519922,task:7819105};
+/* ładowanie zasobów z postępem i Anuluj (AbortController); wasm tylko rozgrzewa cache SW (potem fetch MediaPipe trafia w cache), model .task zwracany jako bufor */
+function fetchP(url,exp,prog,sig,keep){return fetch(url,{signal:sig}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status+' '+url.split('/').pop());if(!r.body||!r.body.getReader){return r.arrayBuffer().then(function(b){prog(b.byteLength);return keep?new Uint8Array(b):null})}
+  var rd=r.body.getReader(),ch=[];return (function pump(){return rd.read().then(function(x){if(x.done)return keep?cat(ch):null;prog(x.value.length);if(keep)ch.push(x.value);return pump()})})()})}
+function cat(ch){var n=0,i;for(i=0;i<ch.length;i++)n+=ch[i].length;var o=new Uint8Array(n),p=0;for(i=0;i<ch.length;i++){o.set(ch[i],p);p+=ch[i].length}return o}
+function paint(){return new Promise(function(r){var d=false,f=function(){if(!d){d=true;r()}};try{requestAnimationFrame(function(){setTimeout(f,0)})}catch(e){}setTimeout(f,80)})}
+function loadLm(id){if(G.lm)return Promise.resolve(G.lm);if(G.lmP)return G.lmP;var base=new URL('vendor/mediapipe/',document.baseURI).href,done={a:0,b:0,c:0},tot=SZ.mjs+SZ.wasm+SZ.task;
+ var ac=window.AbortController?new AbortController():null;G.ac=ac;var sig=ac?ac.signal:undefined;G.loadPct=0;
+ var up=function(k){return function(n){done[k]+=n;G.lastProg=performance.now();G.loadPct=Math.min(99,Math.round(100*(done.a+done.b+done.c)/tot));if(G.on&&!G.stats.n)status(Tr('gLoad')+' '+G.loadPct+'%')}};
+ var pref=lsg('gesty_dl')||((/[?&#]gestdl=(GPU|CPU)/i.exec(QS)||[])[1]||'').toUpperCase()||null;G.delegate=pref||(IOS?'CPU':'GPU');
+ var p=Promise.all([fetchP(base+'vision_bundle.mjs',SZ.mjs,up('a'),sig,false),fetchP(base+'wasm/vision_wasm_internal.wasm',SZ.wasm,up('b'),sig,false),fetchP(base+'hand_landmarker.task',SZ.task,up('c'),sig,true)]).then(function(res){G.dlDone=true;
+  return paint().then(function(){return import(base+'vision_bundle.mjs')}).then(function(v){MP=v;return v.FilesetResolver.forVisionTasks(base+'wasm')}).then(function(fs){
+  var mk=function(dl){return MP.HandLandmarker.createFromOptions(fs,{baseOptions:{modelAssetBuffer:res[2],delegate:dl},runningMode:'VIDEO',numHands:1,minHandDetectionConfidence:0.5,minTrackingConfidence:0.5})};
+  return paint().then(function(){return mk(G.delegate)}).catch(function(){if(G.delegate=='CPU')throw new Error('model');G.delegate='CPU';return mk('CPU')})})}).then(function(l){if(G.lmP===p)G.lmP=null;
+   if(id!=null&&id!==G.lid&&IOS){try{l.close()}catch(e){}throw new Error('cancelled')}/* anulowano w trakcie: nie trzymaj ~100 MB */G.lm=l;return l},function(e){if(G.lmP===p)G.lmP=null;throw e});
+ G.lmP=p;return p}
 function ui(){var v=document.getElementById('view');if(!v)return null;var u=document.getElementById('gestUI');if(u)return u;
  u=document.createElement('div');u.id='gestUI';u.innerHTML='<button id="gestBtn" class="gbtn" aria-pressed="false"></button><button id="gestCam" class="gbtn sm" hidden></button>'+
- '<div id="gestPv" hidden><video id="gestV" playsinline muted autoplay></video><canvas id="gestC" width="160" height="120"></canvas><div id="gestCur" hidden></div><div id="gestS"></div></div>';
- v.appendChild(u);label();u.querySelector('#gestBtn').onclick=function(e){e.stopPropagation();G.on?stop('user'):start()};
+ '<div id="gestPv" hidden><video id="gestV" playsinline muted autoplay></video><canvas id="gestC" width="160" height="120"></canvas><div id="gestCur" hidden></div><div id="gestS"></div><button id="gestCancel" class="gcancel" type="button" hidden></button></div>';
+ v.appendChild(u);label();u.querySelector('#gestBtn').onclick=function(e){e.stopPropagation();G.on?stop(G.stats.n?'user':'cancel'):start()};
+ u.querySelector('#gestCancel').onclick=function(e){e.stopPropagation();stop('cancel')};
  u.querySelector('#gestCam').onclick=function(e){e.stopPropagation();G.facing=G.facing=='user'?'environment':'user';if(G.on){stopCam();openCam()}label()};
  u.addEventListener('pointerdown',function(e){e.stopPropagation()});return u}
-function label(){var b=document.getElementById('gestBtn'),c=document.getElementById('gestCam');if(!b)return;b.textContent='✋ '+Tr(G.on?'gHandOff':'gHand');b.setAttribute('aria-pressed',G.on?'true':'false');b.classList.toggle('on',G.on);
+function label(){var b=document.getElementById('gestBtn'),c=document.getElementById('gestCam');if(!b)return;var na=!G.on&&!!blocked(),ld=G.on&&!(G.stats&&G.stats.n);b.textContent='✋ '+Tr(na?'gHandNA':ld?'gCancel':G.on?'gHandOff':'gHand');b.setAttribute('aria-pressed',G.on?'true':'false');b.classList.toggle('on',G.on);b.classList.toggle('na',na);var cb=document.getElementById('gestCancel');if(cb){cb.hidden=!ld;cb.textContent=Tr('gCancel')}
  c.textContent=Tr(G.facing=='user'?'gCamB':'gCamF');c.hidden=!G.on;document.getElementById('gestPv').hidden=!G.on}
 function status(t){var s=document.getElementById('gestS');if(s)s.textContent=t}
-function openCam(){G.gumCalls++;return navigator.mediaDevices.getUserMedia({video:{facingMode:G.facing,width:{ideal:320},height:{ideal:240},frameRate:{ideal:20,max:30}},audio:false}).then(function(s){
+function openCam(){G.gumCalls++;return navigator.mediaDevices.getUserMedia({video:{facingMode:G.facing,width:{ideal:320},height:{ideal:240},frameRate:IOS?{ideal:15,max:15}:{ideal:20,max:30}},audio:false}).then(function(s){
   if(!G.on){s.getTracks().forEach(function(t){t.stop()});return}G.stream=s;var v=document.getElementById('gestV');v.srcObject=s;v.style.transform=G.facing=='user'?'scaleX(-1)':'';G.video=v;return v.play().catch(function(){})})}
 function stopCam(){if(G.stream){G.stream.getTracks().forEach(function(t){t.stop()});G.stream=null}var v=document.getElementById('gestV');if(v)v.srcObject=null}
-function start(){if(G.on)return;G.on=true;var id=++G.lid;G.wd={err:0,hard:0,slow:0};if(G.v3)G.facing='user';G.mapper=Mapper({mirror:true});G.stats={fps:0,lat:0,n:0,lat_sum:0,lat_max:0};label();status(Tr('gLoad'));
- clearTimeout(G.wdT);G.wdT=setTimeout(function(){if(G.on&&id===G.lid&&!G.stats.n)safeOff('timeout')},WD.startMs);/* oria-183 HANG-1: start nie może wisieć (model/kamera) */
- Promise.all([loadLm(),openCam()]).then(function(){if(!G.on||id!==G.lid)return;G.mapper.opts.mirror=G.facing=='user';loop(id)}).catch(function(e){if(id!==G.lid)return;status(Tr('gNoCam')+(e&&e.name||e));G.err=String(e&&e.message||e);stop('error')})}
+function start(){if(G.on)return;var bl=blocked();if(bl){G.blockWhy=bl;toast('unavail');return}G.on=true;G.camStall=0;var id=++G.lid;G.wd={err:0,hard:0,slow:0};if(G.v3)G.facing='user';G.mapper=Mapper({mirror:true});G.stats={fps:0,lat:0,n:0,lat_sum:0,lat_max:0};label();status(Tr('gLoad'));
+ clearTimeout(G.wdT);G.loadT0=performance.now();G.lastProg=G.loadT0;G.dlDone=false;G.wdT=setTimeout(function(){startTO(id)},WD.startMs);/* oria-183 HANG-1: start nie może wisieć (model/kamera) */
+ /* oria-189: model ładowany bez blokady UI (fetch z postępem + paint przed createFromOptions); kamera dopiero po modelu na iOS (jedna ciężka rzecz naraz) */
+ (IOS?loadLm(id).then(function(){if(!G.on||id!==G.lid)return;/* model gotowy: pozostało zezwolenie na kamerę (użytkownik może długo klikać) – 60 s, bez blokady urządzenia */clearTimeout(G.wdT);G.wdT=setTimeout(function(){if(G.on&&id===G.lid&&!G.stats.n){G.camStall=1;safeOff('timeout')}},60000);return openCam()}):Promise.all([loadLm(id),openCam()])).then(function(){if(!G.on||id!==G.lid)return;G.mapper.opts.mirror=G.facing=='user';G.loadMs=Math.round(performance.now()-G.loadT0);label();loop(id)}).catch(function(e){if(id!==G.lid)return;status(Tr('gNoCam')+(e&&e.name||e));G.err=String(e&&e.message||e);if(IOS&&!(e&&e.name=='NotAllowedError'))safeOff('err');else stop('error')})}
 function setTracked(on){G.tracked=on;var p=document.getElementById('gestPv');if(p)p.classList.toggle('tracked',on);var c=document.getElementById('gestCur');if(c)c.hidden=!on;document.dispatchEvent(new CustomEvent('gesty:track',{detail:{on:on}}))}
 function cursor(x,y,g){var c=document.getElementById('gestCur');if(!c)return;c.style.left=(x*100)+'%';c.style.top=(y*100)+'%';c.dataset.g=g||''}
 function v3frame(lm,o,t){if(!G.v3)return;if(lm){G.hit++;G.lastHand=t;if(!G.tracked&&G.hit>=G.trackN)setTracked(true);
@@ -81,25 +104,27 @@ function gClick(){var P=G.cur||{x:.5,y:.5},v=document.getElementById('view'),cv=
  // klik tylko w canvas 3D (bez przycisków UI/AR)
  ['pointerdown','pointerup','click'].forEach(function(n){try{cv.dispatchEvent(new (n=='click'?MouseEvent:(root.PointerEvent||MouseEvent))(n,{bubbles:true,clientX:cx,clientY:cy}))}catch(e){}});return 'canvas'}
 function gReset(){var c=oc();document.dispatchEvent(new CustomEvent('gesty:reset'));if(c&&typeof c.reset=='function'){c.reset();return 'oc'}return 'event'}
-function stop(why){G.on=false;G.lid++;clearTimeout(G.wdT);try{var v0=document.getElementById('gestV');if(v0&&v0.pause)v0.pause()}catch(e){}if(G.v3){G.hit=0;setTracked(false)}G.lastStop=why||'';clearTimeout(G.timer);stopCam();label();var c=document.getElementById('gestC');if(c)c.getContext('2d').clearRect(0,0,c.width,c.height)}
+function stop(why){G.on=false;G.lid++;clearTimeout(G.wdT);try{if(G.ac&&!G.lm){G.ac.abort();G.lmP=null}}catch(e){}if(IOS){var l0=G.lm;G.lm=null;if(l0&&l0.close)setTimeout(function(){try{l0.close()}catch(e){}},60)}try{var v0=document.getElementById('gestV');if(v0&&v0.pause)v0.pause()}catch(e){}if(G.v3){G.hit=0;setTracked(false)}G.lastStop=why||'';clearTimeout(G.timer);stopCam();label();var c=document.getElementById('gestC');if(c)c.getContext('2d').clearRect(0,0,c.width,c.height)}
 G.start=start;G.stop=stop;
-var FPS=17,PER=1000/FPS,last=0,frames=[];
+var FPS=IOS?15:17,PER=1000/FPS,last=0,frames=[];
 /* oria-183 HANG-1: jedna pętla (token G.lid), oddaj wątek ≥ czas inferencji (≤50% CPU głównego wątku), watchdog: klatka >1.5 s po rozgrzewce lub 3 błędy → bezpieczne wyłączenie + toast */
-var WD={hardMs:1500,warm:5,maxErr:3,startMs:20000};G.WD=WD;
-var TT={pl:{slow:'Sterowanie dłonią wyłączone – urządzenie nie nadąża (bezpiecznie). Spróbuj ponownie.',err:'Sterowanie dłonią wyłączone – błąd modelu/kamery. Spróbuj ponownie.',timeout:'Sterowanie dłonią wyłączone – kamera lub model nie odpowiada.'},en:{slow:'Hand control turned off – device can’t keep up. Try again.',err:'Hand control turned off – model/camera error. Try again.',timeout:'Hand control turned off – camera or model not responding.'},de:{slow:'Handsteuerung deaktiviert – Gerät zu langsam. Erneut versuchen.',err:'Handsteuerung deaktiviert – Modell-/Kamerafehler. Erneut versuchen.',timeout:'Handsteuerung deaktiviert – Kamera oder Modell reagiert nicht.'}};
+var WD=IOS?{hardMs:500,warm:5,maxErr:3,startMs:30000,slowN:3}:{hardMs:1500,warm:5,maxErr:3,startMs:20000,slowN:2};G.WD=WD;
+var TT={pl:{slow:'Sterowanie dłonią wyłączone – urządzenie nie nadąża (bezpiecznie). Spróbuj ponownie.',err:'Sterowanie dłonią wyłączone – błąd modelu/kamery. Spróbuj ponownie.',timeout:'Sterowanie dłonią wyłączone – kamera lub model nie odpowiada.',unavail:'Sterowanie dłonią niedostępne na tym urządzeniu'},en:{slow:'Hand control turned off – device can’t keep up. Try again.',err:'Hand control turned off – model/camera error. Try again.',timeout:'Hand control turned off – camera or model not responding.',unavail:'Hand control is not available on this device'},de:{slow:'Handsteuerung deaktiviert – Gerät zu langsam. Erneut versuchen.',err:'Handsteuerung deaktiviert – Modell-/Kamerafehler. Erneut versuchen.',timeout:'Handsteuerung deaktiviert – Kamera oder Modell reagiert nicht.',unavail:'Handsteuerung auf diesem Gerät nicht verfügbar'}};
 function lg(){var l='pl';try{l=localStorage.getItem('oria_lang')||'pl'}catch(e){}var m=(location.hash||'').match(/lang=(en|pl|de)/);l=m?m[1]:l;return TT[l]?l:'pl'}
 function toast(k){try{var t=document.getElementById('gestToast');if(t)t.remove();t=document.createElement('div');t.id='gestToast';t.setAttribute('role','status');t.setAttribute('aria-live','polite');t.textContent=TT[lg()][k]||TT.pl[k];t.style.cssText='position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:99999;max-width:min(92vw,420px);padding:10px 14px;border-radius:10px;background:rgba(16,20,29,.94);border:1px solid rgba(245,180,60,.55);border-left:4px solid #F5B43C;color:#E6EAF2;font:500 14px/1.4 system-ui;box-shadow:0 6px 24px rgba(0,0,0,.4)';document.body.appendChild(t);setTimeout(function(){t.remove()},6000)}catch(e){}}
-function safeOff(k){G.wdTrip=(G.wdTrip||0)+1;G.wdWhy=k;stop('watchdog:'+k);toast(k);try{document.dispatchEvent(new CustomEvent('gesty:watchdog',{detail:{why:k}}))}catch(e){}}
+function safeOff(k){G.wdTrip=(G.wdTrip||0)+1;G.wdWhy=k;stop('watchdog:'+k);if(IOS&&!G.camStall){lss('gesty_dis',String(Date.now()));k='unavail';label()}/* iOS: po awarii/timeoucie nie próbuj ponownie (14 dni; ?gest=1 resetuje) */toast(k);try{document.dispatchEvent(new CustomEvent('gesty:watchdog',{detail:{why:k}}))}catch(e){}}
 G.lid=0;
+/* oria-189: twardy timeout startu (iOS 30 s). Wolne pobieranie (21 MB po LTE) nie jest winą urządzenia: dopóki bajty płyną (≤10 s przerwy, max 120 s) czekamy; timeout pobierania = komunikat bez blokady 14 dni */
+function startTO(id){if(!(G.on&&id===G.lid&&!G.stats.n))return;var now=performance.now();if(IOS&&!G.dlDone&&now-G.loadT0<120000&&now-G.lastProg<10000){G.wdT=setTimeout(function(){startTO(id)},5000);return}if(IOS&&!G.dlDone)G.camStall=1;safeOff('timeout')}
 /* oria-183 HANG-1: wnioskowanie MediaPipe jest SYNCHRONICZNE na wątku głównym (300–3000 ms/klatkę na słabym GPU/CPU) – w trakcie dotyku/obrotu/pinch nie wnioskujemy, żeby nie blokować gestów dotykowych i OrbitControls */
 var PT=0;['pointerdown','pointermove','touchstart','touchmove','wheel'].forEach(function(n){document.addEventListener(n,function(){PT=performance.now()},{capture:true,passive:true})});G.touchQuiet=250;
 function loop(id){if(!G.on||id!==G.lid)return;var v=G.video,now=performance.now(),lat=0;
  if(now-PT<G.touchQuiet){G.skipTouch=(G.skipTouch||0)+1;G.timer=setTimeout(function(){loop(id)},120);return}
- if(v&&v.readyState>=2&&v.currentTime!==G._lt){G._lt=v.currentTime;var t0=performance.now(),src=v,r=null;try{if(G.delegate=='CPU'){G._cv=G._cv||document.createElement('canvas');G._cv.width=v.videoWidth||320;G._cv.height=v.videoHeight||240;G._cv.getContext('2d').drawImage(v,0,0);src=G._cv}r=G.lm.detectForVideo(src,t0)}catch(e){G.wd.err++;G.err=String(e&&e.message||e);if(G.wd.err>=WD.maxErr){safeOff('err');return}G.timer=setTimeout(function(){loop(id)},200);return}lat=performance.now()-t0;
-  if(G.stats.n>=WD.warm){if(lat>WD.hardMs){if(++G.wd.slow>=2){safeOff('slow');return}}else G.wd.slow=0}
+ if(v&&v.readyState>=2&&v.currentTime!==G._lt){G._lt=v.currentTime;var t0=performance.now(),src=v,r=null;try{if(G.delegate=='CPU'){G._cv=G._cv||document.createElement('canvas');var vw=v.videoWidth||320,vh=v.videoHeight||240;if(G._cv.width!==vw)G._cv.width=vw;if(G._cv.height!==vh)G._cv.height=vh;G._cv.getContext('2d').drawImage(v,0,0);src=G._cv}r=G.lm.detectForVideo(src,t0)}catch(e){G.wd.err++;G.err=String(e&&e.message||e);if(G.wd.err>=WD.maxErr){safeOff('err');return}G.timer=setTimeout(function(){loop(id)},200);return}lat=performance.now()-t0;
+  if(G.stats.n>=WD.warm){if(lat>WD.hardMs){if(++G.wd.slow>=WD.slowN){safeOff('slow');return}}else G.wd.slow=0}
   var lm=r&&r.landmarks&&r.landmarks[0]||null,o=G.mapper.step(lm,t0);if(o.yaw||o.pitch||o.zoom!=1)apply(o);
   if(o.explode)G.lastExplode=explodeToggle();v3frame(lm,o,t0);
-  frames.push(t0);frames=frames.filter(function(f){return t0-f<1000});var S=G.stats;S.n++;S.lat=lat;S.lat_sum+=lat;S.lat_max=Math.max(S.lat_max,lat);S.fps=frames.length;S.gesture=o.gesture;(G.log=G.log||[]).push({t:Math.round(t0),g:o.gesture,lat:+lat.toFixed(1),p:o.paused,e:o.explode});if(G.log.length>2000)G.log.shift();
+  frames.push(t0);frames=frames.filter(function(f){return t0-f<1000});var S=G.stats;S.n++;if(S.n===1)label();S.lat=lat;S.lat_sum+=lat;S.lat_max=Math.max(S.lat_max,lat);S.fps=frames.length;S.gesture=o.gesture;(G.log=G.log||[]).push({t:Math.round(t0),g:o.gesture,lat:+lat.toFixed(1),p:o.paused,e:o.explode});if(G.log.length>2000)G.log.shift();
   draw(document.getElementById('gestC'),lm,o.gesture);
   status((G.dbg?'['+G.delegate+(G.lastStop?' stop:'+G.lastStop:'')+(G.tracked?' T':'')+'] ':'')+(o.paused?Tr('gLost'):(S.fps+' fps · '+lat.toFixed(0)+' ms · '+(o.gesture=='open'?Tr('gOpen'):o.gesture=='pinch'?Tr('gPinch'):o.gesture=='fist'?Tr('gFist'):o.gesture))));}
  if(!G.on||id!==G.lid)return;var wait=Math.max(5,PER-(performance.now()-now),Math.min(2000,lat*2));G.timer=setTimeout(function(){loop(id)},wait)}

@@ -56,3 +56,8 @@
 #gestCur{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--g-vi);box-shadow:0 0 0 2px rgba(155,116,248,.35),0 0 10px rgba(155,116,248,.7);pointer-events:none;transition:left .06s linear,top .06s linear}
 #gestCur[hidden]{display:none}
 #gestCur[data-g=pinch],#gestCur[data-g=fist]{transform:scale(.7)}
+
+/* oria-189 GEST-IOS: niedostępne na iOS (wariant B) + Anuluj przy ładowaniu modelu */
+#gestUI .gbtn.na{opacity:.45}
+#gestUI .gbtn.na::after{background:#8a94a6}
+#gestPv .gcancel{position:absolute;left:4px;bottom:4px;z-index:3;height:26px;min-height:26px;padding:0 10px;border-radius:8px;border:1px solid var(--g-line);background:rgba(11,13,20,.82);color:var(--g-tx);font:600 12px/1 system-ui,-apple-system,sans-serif;cursor:pointer}
