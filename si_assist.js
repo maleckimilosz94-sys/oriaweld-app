@@ -10,25 +10,23 @@ function geoFlags(on){if(on){if(!GP){GP={};GF.forEach(function(f){GP[f]=window[f
 function set(v){window.__siAssist=!!v;geoFlags(window.__siAssist);try{localStorage.setItem(K,v?'1':'0')}catch(e){}sync()}
 window.__siAssist=get();geoFlags(window.__siAssist);window.siAssistSet=set;
 function L(){try{return (location.hash.match(/lang=(en|pl|de)/)||[])[1]||localStorage.getItem('oria_lang')||'pl'}catch(e){return 'pl'}}
-var TX={pl:['Wsparcie SI','włączone','wyłączone'],en:['AI assist','on','off'],de:['KI-Unterstützung','an','aus']};
-function tx(i){return (TX[L()]||TX.pl)[i]}
-/* CSS: fiolet #9b74f8, neon pulse */
+var STX={pl:['Wsparcie SI','włączone','wyłączone'],en:['AI assist','on','off'],de:['KI-Unterstützung','an','aus']};
+function stx(i){return (STX[L()]||STX.pl)[i]}
+/* CSS: oria-195 (Wizja, jeden fiolet): przełącznik SI cyan, bez pulsu/poświaty, etykieta #e3e8ef */
 var css=document.createElement('style');css.id='siAssistCss';
-css.textContent='.siasw{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 4px;padding:8px 10px;border-radius:12px;border:1px solid rgba(155,116,248,.35);background:rgba(155,116,248,.06);font-size:13px;color:#d8ccff;cursor:pointer;user-select:none;min-height:44px;box-sizing:border-box}'+
+css.textContent='.siasw{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0 4px;padding:8px 10px;border-radius:12px;border:1px solid #283040;border-left:3px solid #22d3ee;background:rgba(34,211,238,.05);font-size:13px;color:#e3e8ef;cursor:pointer;user-select:none;min-height:44px;box-sizing:border-box}'+
 '.siasw .sitr{position:relative;flex:none;width:44px;height:24px;border-radius:12px;background:#283040;transition:background .25s}'+
 '.siasw .sitr::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#9aa4b4;transition:transform .25s,background .25s}'+
-'.siasw[aria-checked="true"] .sitr{background:#9b74f8;animation:sipulse 1.8s ease-in-out infinite}'+
+'.siasw[aria-checked="true"] .sitr{background:#22d3ee}'+
 '.siasw[aria-checked="true"] .sitr::after{transform:translateX(20px);background:#fff}'+
-'.siasw[aria-checked="true"] .silb{color:#c4b0ff;text-shadow:0 0 6px rgba(155,116,248,.8)}'+
-'@keyframes sipulse{0%,100%{box-shadow:0 0 4px #9b74f8,0 0 8px rgba(155,116,248,.45)}50%{box-shadow:0 0 10px #9b74f8,0 0 22px rgba(155,116,248,.75)}}'+
-'@media (prefers-reduced-motion:reduce){.siasw[aria-checked="true"] .sitr{animation:none;box-shadow:0 0 8px #9b74f8}}';
+'.siasw[aria-checked="true"] .silb{color:#e3e8ef}';
 (document.head||document.documentElement).appendChild(css);
 function mk(){var d=document.createElement('div');d.className='siasw';d.setAttribute('role','switch');d.tabIndex=0;
  d.innerHTML='<span class="silb"></span><span class="sitr" aria-hidden="true"></span>';
  d.onclick=function(e){e.stopPropagation();set(!window.__siAssist)};
  d.onkeydown=function(e){if(e.key===' '||e.key==='Enter'){e.preventDefault();set(!window.__siAssist)}};
  return d}
-function sync(){[].slice.call(document.querySelectorAll('.siasw')).forEach(function(d){d.setAttribute('aria-checked',window.__siAssist?'true':'false');d.setAttribute('aria-label',tx(0)+': '+tx(window.__siAssist?1:2));d.querySelector('.silb').textContent='✦ '+tx(0)})}
+function sync(){[].slice.call(document.querySelectorAll('.siasw')).forEach(function(d){d.setAttribute('aria-checked',window.__siAssist?'true':'false');d.setAttribute('aria-label',stx(0)+': '+stx(window.__siAssist?1:2));d.querySelector('.silb').textContent='✦ '+stx(0)})}
 /* wstaw suwak do ekranu postępu automatu (#aprogov) */
 function inject(){var ov=document.getElementById('aprogov');if(!ov||ov.querySelector('.siasw'))return;
  var host=ov.querySelector('.m28cl')||ov.querySelector('.pst')||ov.firstElementChild||ov;
@@ -75,10 +73,12 @@ window.siAssist={
 var DT={pl:['⚠ Wymiary nie pasują do modelu. Co robić?','Dopasuj do wymiarów','Zostaw z rysunku','Popraw ręcznie','Zastosuj','Wpisz gabaryt [mm]'],en:['⚠ Dimensions do not match the model. What to do?','Fit to dimensions','Keep drawing geometry','Correct manually','Apply','Enter overall size [mm]'],de:['⚠ Maße passen nicht zum Modell. Was tun?','An Maße anpassen','Zeichnung beibehalten','Manuell korrigieren','Übernehmen','Gesamtmaß eingeben [mm]']};
 function dt(i){return (DT[L()]||DT.pl)[i]}
 var TX={en:{sheetU:'sheet – uniform in-plane scale',thick:'⚠ Thickness looks too large:','długość':'length','wysokość':'height','głębokość':'depth',h:'⚡ Full auto',mod:'Model',fr:'drawing dimensions',fit:'Dimensions did not match the model – fitted to drawing dimensions',keep:'Dimensions do not match the model – drawing geometry kept (to check).',man:'Overall size entered manually: '},de:{sheetU:'Blech – gleichmäßige Skalierung in der Ebene',thick:'⚠ Dicke wirkt zu groß:','długość':'Länge','wysokość':'Höhe','głębokość':'Tiefe',h:'⚡ Vollautomatik',mod:'Modell',fr:'Maße aus der Zeichnung',fit:'Maße passten nicht zum Modell – an Zeichnungsmaße angepasst',keep:'Maße passen nicht zum Modell – Zeichnungsgeometrie beibehalten (prüfen).',man:'Gesamtmaß manuell eingegeben: '},pl:{sheetU:'blacha – skala jednakowa w płaszczyźnie',thick:'⚠ Grubość wygląda na zawyżoną:',h:'⚡ Pełny automat',mod:'Model',fr:'wymiary z rysunku',fit:'Wymiary nie pasowały do modelu – dopasowano do wymiarów z rysunku',keep:'Wymiary nie pasują do modelu – zostawiono geometrię z rysunku (do sprawdzenia).',man:'Gabaryt wpisany ręcznie: '}};
+/* oria-195 (Wizja: jeden fiolet): karta pytania SI = cyan lewa krawędź + etykieta, bez poświaty */
+function siTag(){var T={pl:'PYTANIE SI',en:'AI QUESTION',de:'KI-FRAGE'};return '<div class="siqtag" style="font:10px/1 JetBrains Mono,ui-monospace,Menlo,monospace;letter-spacing:.08em;color:#9aa4b4;margin:0 0 6px">'+(T[L()]||T.pl)+'</div>'}
 function tx(k){var d=TX[L()]||TX.pl;return d[k]!=null?d[k]:k}
 function scaleTo(m,k){if(!m.geo||!m.geo.scale)return;m.geo.scale(k[0],k[1],k[2]);m.geo.computeBoundingBox();var c=m.geo.boundingBox;m.size=[c.max.x-c.min.x,c.max.y-c.min.y,c.max.z-c.min.z];if(m.mesh){m.mesh.W=m.size[0];m.mesh.H=m.size[1];m.mesh.D=m.size[2]}}
 function askDim(m,c,done){var app=document.getElementById('app');if(!app)return done();var N=['długość','wysokość','głębokość'];
- app.innerHTML='<h1>'+tx('h')+'</h1><div class="card" id="dimq" style="border:1px solid #9b74f8;box-shadow:0 0 10px rgba(155,116,248,.45)"><b>'+dt(0)+'</b><p class="small">'+c.msg+'</p>'+
+ app.innerHTML='<h1>'+tx('h')+'</h1><div class="card" id="dimq" style="border:1px solid #283040;border-left:3px solid #22d3ee">'+siTag()+'<b>'+dt(0)+'</b><p class="small">'+c.msg+'</p>'+
  '<div style="display:flex;flex-direction:column;gap:8px"><button class="btn" data-a="fit">'+dt(1)+'</button><button class="btn sec" data-a="keep">'+dt(2)+'</button><button class="btn sec" data-a="man">'+dt(3)+'</button></div><div id="dimman" style="display:none;margin-top:10px"><small>'+dt(5)+'</small>'+
  [0,1,2].map(function(i){return '<label style="display:flex;justify-content:space-between;gap:8px;margin:6px 0">'+tx(N[i])+' <input type="number" inputmode="decimal" data-i="'+i+'" value="'+Math.round(m.size[i])+'" style="width:110px"></label>'}).join('')+'<button class="btn" data-a="apply">'+dt(4)+'</button></div></div>';
  app.querySelectorAll('#dimq button').forEach(function(b){b.onclick=function(){var a=b.dataset.a;

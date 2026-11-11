@@ -53,7 +53,6 @@
 
 /* t940u v3: po złapaniu dłoni podgląd kamery znika, zostaje ramka + fioletowy kursor */
 #gestPv.tracked video,#gestPv.tracked canvas{visibility:hidden}
-#gestCur{position:absolute;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--g-vi);box-shadow:0 0 0 2px rgba(155,116,248,.35),0 0 10px rgba(155,116,248,.7);pointer-events:none;transition:left .06s linear,top .06s linear}
 #gestCur[hidden]{display:none}
 #gestCur[data-g=pinch],#gestCur[data-g=fist]{transform:scale(.7)}
 
