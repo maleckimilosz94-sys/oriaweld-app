@@ -5,7 +5,7 @@
 function D(){if(window.__p2Dbg)console.log.apply(console,arguments)}
 var KM={'Rama (profile zamknięte)':'frame','Rura + wsporniki + płyta':'mixed','Konstrukcja mieszana':'mixed','Mieszany: rura + kątowniki/żebra + płyta':'mixed','Konstrukcja blaszana / gięta':'bent','Płaskowniki + płyty':'plate','Kątowniki / ceowniki + płyty':'mixed','Pojedynczy element':'solid','Konstrukcja przestrzenna':'frame'};
 function L(){try{return (location.hash.match(/lang=(en|pl|de)/)||[])[1]||localStorage.getItem('oria_lang')||'pl'}catch(e){return 'pl'}}
-var TT={pl:['Grubość blachy','Model wychodzi z grubością','mm – to dużo jak na blachę. Podaj grubość [mm]:','Zastosuj','Zostaw'],en:['Sheet thickness','Model thickness is','mm – too much for a sheet. Enter thickness [mm]:','Apply','Keep'],de:['Blechdicke','Modelldicke ist','mm – zu viel für ein Blech. Dicke eingeben [mm]:','Übernehmen','Beibehalten']};
+var TT={pl:['Grubość blachy','Model wychodzi z grubością','mm – to dużo jak na blachę. Podaj grubość [mm]:','Zastosuj','Zostaw'],en:['Sheet thickness','Model thickness is','mm – too thick for sheet metal. Enter thickness [mm]:','Apply','Keep'],de:['Blechdicke','Modelldicke ist','mm – zu viel für ein Blech. Dicke eingeben [mm]:','Übernehmen','Beibehalten']};
 function tt(i){return (TT[L()]||TT.pl)[i]}
 function setPre(p,info){window.__p2pre=p;var main=(p.marks||[]).filter(function(k){return k.t==='rzut główny'&&k.x!=null})[0];
  window.__p2MainPt=main&&info&&info.sheet?{x:main.x*info.sheet.width,y:main.y*info.sheet.height}:null;
