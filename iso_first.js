@@ -27,8 +27,25 @@ function chamfer(A,w,h){/* odległość (px) od tuszu dla pól białych; A=1 tus
  for(y=0;y<h;y++)for(x=0;x<w;x++){i=y*w+x;if(!D[i])continue;var v=D[i];if(x>0)v=Math.min(v,D[i-1]+1);if(y>0){v=Math.min(v,D[i-w]+1);if(x>0)v=Math.min(v,D[i-w-1]+1.414);if(x<w-1)v=Math.min(v,D[i-w+1]+1.414)}D[i]=v}
  for(y=h-1;y>=0;y--)for(x=w-1;x>=0;x--){i=y*w+x;if(!D[i])continue;var u=D[i];if(x<w-1)u=Math.min(u,D[i+1]+1);if(y<h-1){u=Math.min(u,D[i+w]+1);if(x<w-1)u=Math.min(u,D[i+w+1]+1.414);if(x>0)u=Math.min(u,D[i+w-1]+1.414)}D[i]=u}return D}
 function px(sheet,sx,sy,sw,sh,W,H){var c=document.createElement('canvas');c.width=W;c.height=H;var x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,W,H);x.drawImage(sheet,sx,sy,sw,sh,0,0,W,H);return x.getImageData(0,0,W,H).data}
+/* --- 205: kierunki krawędzi (Sobel) – izometria ma linie pod ±30° --- */
+function oriScore(sh,X,Y,W,H){var s=Math.min(1,200/Math.max(W,H)),w=Math.max(8,Math.round(W*s)),h=Math.max(8,Math.round(H*s)),d=px(sh,X,Y,W,H,w,h),G=new Float32Array(w*h),i,x,y;for(i=0;i<w*h;i++)G[i]=lum(d,i*4);
+ var S=0,iso=0,ort=0,hor=0,a30=0,a150=0,nr=0,n=0;for(y=1;y<h-1;y++)for(x=1;x<w-1;x++){i=y*w+x;var gx=(G[i-w+1]+2*G[i+1]+G[i+w+1])-(G[i-w-1]+2*G[i-1]+G[i+w-1]),gy=(G[i+w-1]+2*G[i+w]+G[i+w+1])-(G[i-w-1]+2*G[i-w]+G[i-w+1]),mg=Math.sqrt(gx*gx+gy*gy);if(mg<=60)continue;n++;
+  var a=(Math.atan2(gy,gx)*180/Math.PI+90+360)%180;S+=mg;if(Math.abs(a-30)<10){a30+=mg;iso+=mg}else if(Math.abs(a-150)<10){a150+=mg;iso+=mg}if(a<6||a>174){ort+=mg;hor+=mg}else if(Math.abs(a-90)<6)ort+=mg;if(Math.abs(a-60)<10||Math.abs(a-120)<10)nr+=mg}
+ if(n<80||!S)return null;var f=function(v){return +(v/S).toFixed(2)};return {iso:f(iso),ort:f(ort),hor:f(hor),a30:f(a30),a150:f(a150),nr:f(nr)}}
+/* izometria: dużo krawędzi pod 30° i 150°, mało poziomych (pionowe są normalne w izo), mało pod 60/120° (okręgi/ukosy rozkładają się równo) */
+function isoLike(o){return o&&o.iso>=0.15&&o.iso>=1.5*o.hor&&Math.min(o.a30,o.a150)>=0.05&&o.iso>=2*o.nr}
+function bomCount(tx){var r=tx.match(/FLAT\s?BAR|L[\s-]?ANGLE|\bANGLE\b|\bRHS\b|\bSHS\b|\bIPE\b|\bUPN\b|\bUNP\b|\bHEA\b|\bHEB\b|\bPIPE\b|P[ŁL]ASKOWNIK|K[ĄA]TOWNIK|CEOWNIK|FLACHSTAHL|WINKEL/g);return r?r.length:0}
+/* --- 205: skan całego arkusza po izometrię, gdy rozpoznanie widoków jej nie dało (m.V.iso brak) --- */
+function findIsoSheet(m){var sh=m&&m.info&&m.info.sheet;if(!sh||!(sh.width>0))return null;var t0=Date.now(),SW=sh.width,SH=sh.height,k=Math.min(1,600/Math.max(SW,SH)),w=Math.max(8,Math.round(SW*k)),h=Math.max(8,Math.round(SH*k)),d=px(sh,0,0,SW,SH,w,h),A=new Uint8Array(w*h),i;
+ for(i=0;i<w*h;i++)A[i]=lum(d,i*4)<170?1:0;/* bez ramki arkusza / siatki: składowe surowego tuszu > 50% szer. lub wys. arkusza */var l0=label(A,w,h,1),drop={};l0.R.forEach(function(R){if(R.x1-R.x0>0.5*w||R.y1-R.y0>0.5*h)drop[R.id]=1});for(i=0;i<w*h;i++)if(A[i]&&drop[l0.L[i]])A[i]=0;
+ var r=Math.max(2,Math.round(0.01*Math.max(w,h))),lb=label(dil(A,w,h,r),w,h,1),M=Math.max(w,h),C=[],DB=[];window.__iso205dbg=null;
+ lb.R.forEach(function(R){var bw=R.x1-R.x0+1,bh=R.y1-R.y0+1;if(bw>0.6*w||bh>0.6*h||bw<0.06*M||bh<0.06*M||bw>3.5*bh||bh>3.5*bw)return;var X=R.x0/k,Y=R.y0/k,W=bw/k,H=bh/k,o=oriScore(sh,X,Y,W,H);if(DB.length<25)DB.push([X|0,Y|0,W|0,H|0,o]);if(isoLike(o))C.push({x:X,y:Y,w:W,h:H,o:o})});window.__iso205dbg={r:r,k:+k.toFixed(3),SW:SW,SH:SH,c:DB};
+ if(!C.length)return null;C.sort(function(a,b){return b.w*b.h-a.w*a.h});var B=C[0],g=0.12*Math.max(SW,SH);
+ C.slice(1).forEach(function(c){/* sklej sąsiednie kawałki tej samej izometrii */if(c.x<B.x+B.w+g&&c.x+c.w>B.x-g&&c.y<B.y+B.h+g&&c.y+c.h>B.y-g){var x0=Math.min(B.x,c.x),y0=Math.min(B.y,c.y),x1=Math.max(B.x+B.w,c.x+c.w),y1=Math.max(B.y+B.h,c.y+c.h);B={x:x0,y:y0,w:x1-x0,h:y1-y0,o:B.o}}});
+ var v={ob:{x:B.x,y:B.y,w:B.w,h:B.h},iso:true,scan205:1,o:B.o,n:C.length,ms:Date.now()-t0};window.__iso205scan=v;L('skan arkusza: izometria',JSON.stringify(v));return v}
+window.__findIsoSheet205=findIsoSheet;
 /* --- 1) analiza izometrii --- */
-function isoAnalyze(m){var iv=m&&m.V&&m.V.iso,sh=m&&m.info&&m.info.sheet;if(!iv||!iv.ob||!sh||!(sh.width>0))return null;var t0=Date.now();
+function isoAnalyze(m,ivX){var iv=ivX||(m&&m.V&&m.V.iso),sh=m&&m.info&&m.info.sheet;if(!iv||!iv.ob||!sh||!(sh.width>0))return null;var t0=Date.now();
  var SW=sh.width,SH=sh.height,k=Math.min(1,600/Math.max(SW,SH)),w=Math.max(8,Math.round(SW*k)),h=Math.max(8,Math.round(SH*k)),d=px(sh,0,0,SW,SH,w,h),A=new Uint8Array(w*h),i;
  for(i=0;i<w*h;i++)A[i]=lum(d,i*4)<170?1:0;
  /* region izometrii: składowe tuszu (po zlepieniu) przechodzące przez środek rzutu iso; bez ramki arkusza i tabelki (składowe > 80% arkusza lub w rogu tabelki) */
@@ -49,17 +66,19 @@ function isoAnalyze(m){var iv=m&&m.V&&m.V.iso,sh=m&&m.info&&m.info.sheet;if(!iv|
   if(e<0.18&&Lr>0.12*M){el++;elL+=Lr}else if(R.a>0.03*tot){big++;bigA+=R.a}else mid++;
   if(reg.length<60)reg.push([R.a,+e.toFixed(3),Lr])});
  var tx=String(m.allText||'').toUpperCase(),prof=/RHS|SHS|IPE|UPN|HEA|HEB|PROFIL|RURA|\bTUBE|SQUARE|ANGLE|\bL\s?\d+\s?[X×]\s?\d+|\d+\s?[X×]\s?\d+\s?[X×]\s?\d+/.test(tx),sheetTx=/\bT\s*=\s*\d|BLACH|SHEET|THICK|LASER/.test(tx);
- var cls='?',conf=0,why=[];
+ var bom=bomCount(tx),cls='?',conf=0,why=[];
  if(el>=8||(el>=5&&prof)){cls='frame';conf=Math.min(1,0.45+0.06*el+(prof?0.15:0));why.push(el+' wydłużonych pól (ściany prętów)'+(prof?' + oznaczenie profilu':''))}
  else if(el<=2&&big>=1&&bigA>0.12*tot&&!prof){cls='plate';conf=0.6;why.push('jedna duża płaszczyzna, '+el+' krawędzi')}
- var R={cls:cls,conf:+conf.toFixed(2),el:el,elL:Math.round(elL/M*100)/100,big:big,bigA:+(bigA/tot).toFixed(3),mid:mid,ink:+(ink/tot).toFixed(3),prof:prof?1:0,sheetTx:sheetTx?1:0,box:[X0|0,Y0|0,XW|0,YH|0],grown:grown,gr:+((bx1-bx0)*(by1-by0)/Math.max(1,oA)).toFixed(2),iso:[o.x|0,o.y|0,o.w|0,o.h|0],why:why,ms:Date.now()-t0,dry:dry()?1:0};
+ /* 205: tabela części z ≥3 pozycjami profili (płaskownik/kątownik/RHS…) + rzut iso o kierunkach izometrycznych → rama (elecbox: ramka z kątowników i płaskowników) */
+ var so=null;if(cls==='?'&&bom>=3&&!window.__noIsoBom&&!/[?&#]isobom=0/.test(q())){so=oriScore(sh,X0,Y0,XW,YH);if(so&&isoLike(so)){cls='frame';conf=0.8;why.push('tabela części: '+bom+' pozycji profili + izometria')}}
+ var R={cls:cls,conf:+conf.toFixed(2),el:el,elL:Math.round(elL/M*100)/100,big:big,bigA:+(bigA/tot).toFixed(3),mid:mid,ink:+(ink/tot).toFixed(3),prof:prof?1:0,bom:bom,so:so,sheetTx:sheetTx?1:0,box:[X0|0,Y0|0,XW|0,YH|0],grown:grown,gr:+((bx1-bx0)*(by1-by0)/Math.max(1,oA)).toFixed(2),iso:[o.x|0,o.y|0,o.w|0,o.h|0],why:why,ms:Date.now()-t0,dry:dry()?1:0};
  window.__iso204=R;L('analiza',JSON.stringify(R));return R}
 window.__isoAnalyze204=isoAnalyze;
-function isFrameIso(m){return !off()&&!dry()&&m&&m.iso204&&m.iso204.cls==='frame'&&!manual(m)}
+function isFrameIso(m){return !off()&&!dry()&&m&&m.iso204&&m.iso204.cls==='frame'&&!m.iso204.src&&!manual(m)}/* 205: izometria ze skanu arkusza = tylko podpowiedź (P2) i zapis w m.iso204, bez zmiany modelu */
 function protectedKind(m){/* nie ruszam: bryły obrotowe/certoLow, szpula, mixpp ręczny, PDF b2e */return m.kind==='rot'||!!m.certoLow||m.kindAlias==='mixpp'||!!m.b2e||m.kind==='pipe'}
 /* --- 2) klasyfikacja --- */
-function wrapClassify(){var o=window.classify;if(typeof o!=='function'||o.__iso204)return;var w=function(m){var r=o.apply(this,arguments);try{if(off()||!m||!m.V||!m.V.iso)return r;m.iso204=isoAnalyze(m);if(!m.iso204||dry())return r;
-  var I=m.iso204,S=m.kindScores;I.kind0=m.kind;I.conf0=m.kindConf;if(I.cls!=='frame'||manual(m)||protectedKind(m)||!S)return r;
+function wrapClassify(){var o=window.classify;if(typeof o!=='function'||o.__iso204)return;var w=function(m){var r=o.apply(this,arguments);try{if(off()||!m||!m.V)return r;var sv=null;if(!m.V.iso){if(window.__noIsoScan||/[?&#]isoscan=0/.test(q()))return r;sv=findIsoSheet(m);if(!sv)return r}m.iso204=isoAnalyze(m,sv);if(m.iso204&&sv){m.iso204.src='skan arkusza';m.iso204.scan=[sv.ob.x|0,sv.ob.y|0,sv.ob.w|0,sv.ob.h|0];m.iso204.scanO=sv.o}if(!m.iso204||dry())return r;
+  var I=m.iso204,S=m.kindScores;I.kind0=m.kind;I.conf0=m.kindConf;if(I.src){I.act='skan: tylko podpowiedź';return r}if(I.cls!=='frame'||manual(m)||protectedKind(m)||!S)return r;
   if(m.kind==='frame'||m.kind==='mixed'){I.act='ok:'+m.kind;return r}
   /* plate/bent/solid → głos izometrii na ramę (konstrukcje mieszane: rama + cechy blachy → mixed liczy classify sam) */
   var add=1.2+I.conf;S.frame+=add;if(S.frame>0.8&&(S.plate>0.8||S.bent>0.8)&&S.mixed<(S.frame+Math.max(S.plate,S.bent))/2)S.mixed=(S.frame+Math.max(S.plate,S.bent))/2;
@@ -79,7 +98,7 @@ function fitDims(m,c){c.__iso204=1;var V=m.V||{},f=V.front,t=V.top,s=V.side,k=m.
 /* 2b) gabaryt ramy ← wymiary napisane na rzutach: oś bryły, która różni się od wymiaru o 3–20%, dociągam do niego (tylko ramy przy iso = rama; wymiary ≥100 mm, pewność OCR ≥60). Wyłącznik #isofit=0 */
 function snapDims(m,c){if(!c||!c.geo||c.__isoSnap||/[?&#]isofit=0/.test(q()))return;c.__isoSnap=1;var V=(m.nums||[]).filter(function(n){return n&&n.p&&+n.p.value>=100&&!n.p.prefix&&(n.conf==null||n.conf>=60)}).map(function(n){return +n.p.value});if(!V.length)return;
  c.geo.computeBoundingBox();var b=c.geo.boundingBox,S=[b.max.x-b.min.x,b.max.y-b.min.y,b.max.z-b.min.z],mx=Math.max.apply(0,S),K=[1,1,1],ch=[];
- S.forEach(function(sv,i){if(sv<0.25*mx)return;var best=null;V.forEach(function(v){var r=Math.abs(v-sv)/v;if(r>=0.03&&r<=0.2&&(!best||Math.abs(v-sv)<Math.abs(best-sv)))best=v});if(best){K[i]=best/sv;ch.push(Math.round(sv)+'→'+best)}});
+ S.forEach(function(sv,i){if(sv<0.25*mx)return;/* 205: oś już zgodna z jakimś wymiarem (<3%) – nie ruszam (elecbox 618≈620, a 580/230 to długości z tabeli części) */if(V.some(function(v){return Math.abs(v-sv)/v<0.03}))return;var best=null;V.forEach(function(v){var r=Math.abs(v-sv)/v;if(r>=0.03&&r<=0.2&&(!best||Math.abs(v-sv)<Math.abs(best-sv)))best=v});if(best){K[i]=best/sv;ch.push(Math.round(sv)+'→'+best)}});
  if(!ch.length)return;c.geo.scale(K[0],K[1],K[2]);c.geo.computeBoundingBox();c.how=(c.how||'')+' · gabaryt dociągnięty do wymiarów z rzutów ('+ch.join(', ')+')';m.iso204.snap=ch}
 var ODD=/^(przecięcie rzutów|wyciągnięcie |blacha z obrysu|płyta|tylko widok 3D|pudełko z rozwinięcia|blacha gięta|wspornik uchowy|zespół spawany)/;
 function wrapPick(){var o=window.__isoLockPick;if(o&&o.__iso204)return;var w=function(m,C,pick){var p=o?(o(m,C,pick)||pick):pick;try{if(!isFrameIso(m)||protectedKind(m)||!p||!ODD.test(p.name||''))return p;
@@ -91,13 +110,13 @@ function wrapPick(){var o=window.__isoLockPick;if(o&&o.__iso204)return;var w=fun
 /* --- 5) status APPROXIMATE po wyborze (skala zgadnięta + iso) --- */
 function wrapRebuild(){var o=window.rebuild;if(typeof o!=='function'||o.__iso204)return;var w=function(m){var r=o.apply(this,arguments);try{if(isFrameIso(m)&&m.pick&&m.scaleConf==='zgadnięta'){var R=m.isoRef||(m.isoRef={status:'OK',hint:null,notes:[]});R.notes=R.notes||[];var nt='brak wymiarów – model z obrysu izometrii i wartości standardowych (APPROXIMATE)';if(R.notes.indexOf(nt)<0)R.notes.push(nt);if(R.status==='OK')R.status='APPROXIMATE';R.approx=1}}catch(e){}return r};w.__iso204=1;w.__isoRef=o.__isoRef;w.__isoLock=o.__isoLock;w.__mid=o.__mid;window.rebuild=w}
 /* --- 6) P2: podpowiedź z izometrii --- */
-var TX={pl:{h:'Izometria na rysunku',frame:'wygląda na ramę z profili',plate:'wygląda na płaską blachę / płytę',unk:'jest – użyję jej jako wzoru układu części',n:'widoczne ściany prętów',use:'Model buduję wg izometrii (układ części), wymiary biorę z rzutów.'},
- en:{h:'Isometric view on the drawing',frame:'looks like a frame made of sections',plate:'looks like a flat sheet / plate',unk:'found – I will use it as the layout reference',n:'visible member faces',use:'I build the model from the isometric view (part layout) and take dimensions from the views.'},
- de:{h:'Isometrie auf der Zeichnung',frame:'sieht aus wie ein Rahmen aus Profilen',plate:'sieht aus wie ein flaches Blech / eine Platte',unk:'vorhanden – ich nutze sie als Vorlage für die Anordnung',n:'sichtbare Stabflächen',use:'Ich baue das Modell nach der Isometrie (Anordnung) und nehme die Maße aus den Ansichten.'}};
+var TX={pl:{h:'Izometria na rysunku',frame:'wygląda na ramę z profili',plate:'wygląda na płaską blachę / płytę',unk:'jest – użyję jej jako wzoru układu części',n:'widoczne ściany prętów',use:'Model buduję wg izometrii (układ części), wymiary biorę z rzutów.',scan:'znaleziona skanem całego arkusza'},
+ en:{h:'Isometric view on the drawing',frame:'looks like a frame made of sections',plate:'looks like a flat sheet / plate',unk:'found – I will use it as the layout reference',n:'visible member faces',use:'I build the model from the isometric view (part layout) and take dimensions from the views.',scan:'found by scanning the whole sheet'},
+ de:{h:'Isometrie auf der Zeichnung',frame:'sieht aus wie ein Rahmen aus Profilen',plate:'sieht aus wie ein flaches Blech / eine Platte',unk:'vorhanden – ich nutze sie als Vorlage für die Anordnung',n:'sichtbare Stabflächen',use:'Ich baue das Modell nach der Isometrie (Anordnung) und nehme die Maße aus den Ansichten.',scan:'beim Scan des ganzen Blatts gefunden'}};
 function lang(){var l='pl';try{l=localStorage.getItem('oria_lang')||document.documentElement.lang||'pl'}catch(e){}l=String(l).slice(0,2);return TX[l]?l:'pl'}
-window.__p2IsoHint=function(m,st,esc){if(off()||!m||!m.V||!m.V.iso)return '';var I=m.iso204||null,T=TX[lang()],c=I&&I.cls,tt=c==='frame'?T.frame:(c==='plate'&&(m.kind==='plate'||m.kind==='bent'))?T.plate:T.unk;esc=esc||function(s){return String(s)};
- try{if(st&&st.iso==null&&!st.__iso204)st.iso=true;if(st)st.__iso204=1}catch(e){}
- return '<div class="iso204hint" role="status" style="margin:8px 0 10px;padding:10px 12px;border-radius:10px;background:rgba(16,20,29,.92);border:1px solid rgba(34,211,238,.45);border-left:4px solid #22D3EE;color:#E6EAF2;font:500 14px/1.4 system-ui"><b>⬡ '+esc(T.h)+'</b>: '+esc(tt)+(c==='frame'&&I.el?' ('+I.el+' '+esc(T.n)+')':'')+'<br><small style="opacity:.8">'+esc(T.use)+'</small></div>'};
+window.__p2IsoHint=function(m,st,esc){if(off()||!m||!m.V)return '';var I=m.iso204||null,scan=!m.V.iso&&I&&I.src;if(!m.V.iso&&!scan)return '';T=TX[lang()],c=I&&I.cls,tt=c==='frame'?T.frame:(c==='plate'&&(m.kind==='plate'||m.kind==='bent'))?T.plate:T.unk;esc=esc||function(s){return String(s)};
+ if(!scan)try{if(st&&st.iso==null&&!st.__iso204)st.iso=true;if(st)st.__iso204=1}catch(e){}
+ return '<div class="iso204hint" role="status" style="margin:8px 0 10px;padding:10px 12px;border-radius:10px;background:rgba(16,20,29,.92);border:1px solid rgba(34,211,238,.45);border-left:4px solid #22D3EE;color:#E6EAF2;font:500 14px/1.4 system-ui"><b>⬡ '+esc(T.h)+'</b>: '+esc(tt)+(c==='frame'&&I.el?' ('+I.el+' '+esc(T.n)+')':'')+(scan?' <small>('+esc(T.scan)+')</small>':'')+'<br><small style="opacity:.8">'+esc(T.use)+'</small></div>'};
 function all(){wrapClassify();wrapGate();wrapCand();wrapPick();wrapRebuild()}
 window.addEventListener('load',function(){setTimeout(function(){setTimeout(function(){setTimeout(all,0)},0)},0)});
 })();
