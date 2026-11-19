@@ -62,3 +62,4 @@ deploy_response*
 !/p2_vlm_hint.js
 !/rq.js
 !/rq_worker.js
+!/dimconfirm.js
