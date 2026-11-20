@@ -63,3 +63,5 @@ deploy_response*
 !/rq.js
 !/rq_worker.js
 !/dimconfirm.js
+!/proflib/
+!/proflib/**
